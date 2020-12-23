@@ -1,10 +1,10 @@
 package com.alishangtian.macos.configuration;
 
-import com.alishangtian.macos.macos.DefaultXtimerClient;
+import com.alishangtian.macos.common.redis.JedisPoolFactory;
+import com.alishangtian.macos.macos.DefaultMacosClient;
 import com.alishangtian.macos.macos.config.ClientConfig;
 import com.alishangtian.macos.macos.event.DefaultChannelEventListener;
-import com.alishangtian.macos.macos.processor.XtimerProcessor;
-import com.alishangtian.macos.common.redis.JedisPoolFactory;
+import com.alishangtian.macos.macos.processor.MacosProcessor;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,27 +26,27 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Version 0.0.1
  */
 @Configuration
-@ConditionalOnProperty(name = "xtimer.config.clientEnabled", havingValue = "true")
+@ConditionalOnProperty(name = "macos.config.clientEnabled", havingValue = "true")
 public class XtimerClientAutoConfiguration {
     @Autowired
-    XtimerProcessor xtimerProcessor;
+    MacosProcessor macosProcessor;
 
     @Bean
     @ConditionalOnMissingBean(NettyClientConfig.class)
-    @ConfigurationProperties(prefix = "xtimer.client")
+    @ConfigurationProperties(prefix = "macos.client")
     public NettyClientConfig nettyClientConfig() {
         return new NettyClientConfig();
     }
 
     @Bean
     @ConditionalOnMissingBean(ClientConfig.class)
-    @ConfigurationProperties(prefix = "xtimer.config")
+    @ConfigurationProperties(prefix = "macos.config")
     public ClientConfig clientConfig() {
         return new ClientConfig();
     }
 
-    @Bean("xtimerClient")
-    public DefaultXtimerClient xtimerClient(NettyClientConfig nettyClientConfig, ClientConfig clientConfig) {
+    @Bean("macosClient")
+    public DefaultMacosClient macosClient(NettyClientConfig nettyClientConfig, ClientConfig clientConfig) {
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(4, new ThreadFactory() {
             AtomicInteger nums = new AtomicInteger();
 
@@ -55,15 +55,12 @@ public class XtimerClientAutoConfiguration {
                 return new Thread(runnable, "xtimer-client-scheduled-pool-thread-" + nums.getAndIncrement());
             }
         });
-        JedisCluster jedisCluster = JedisPoolFactory.getJedisCluster(clientConfig.getRegisters(), clientConfig.getTimeout());
-        xtimerProcessor.setJedisCluster(jedisCluster);
-        DefaultXtimerClient client = DefaultXtimerClient.builder()
+        DefaultMacosClient client = DefaultMacosClient.builder()
                 .config(nettyClientConfig)
-                .xtimerProcessor(xtimerProcessor)
+                .macosProcessor(macosProcessor)
                 .defaultChannelEventListener(new DefaultChannelEventListener())
                 .clientConfig(clientConfig)
                 .scheduledThreadPoolExecutor(scheduledThreadPoolExecutor)
-                .jedisCluster(jedisCluster)
                 .publicExecutor(null)
                 .build();
         client.start();

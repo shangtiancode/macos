@@ -15,16 +15,13 @@ import redis.clients.jedis.JedisCluster;
  * @Author maoxiaobing
  **/
 @Builder
-public class InvokeXtimerProcessor implements NettyRequestProcessor {
+public class InvokeMacosProcessor implements NettyRequestProcessor {
 
-    private XtimerProcessor xtimerProcessor;
-    private JedisCluster jedisCluster;
-    private String clusterName;
+    private MacosProcessor macosProcessor;
 
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) {
-        jedisCluster.lpush(XtimerUtils.constructClientTriggeredCountKey(clusterName), "1");
-        boolean result = xtimerProcessor.process(JSONUtils.parseObject(request.getLoad(), XtimerRequest.class));
+        boolean result = macosProcessor.process(JSONUtils.parseObject(request.getLoad(), XtimerRequest.class));
         XtimerCommand response = XtimerCommand.builder().result(result ? 1 : 0).build();
         return response;
     }

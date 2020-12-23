@@ -2,9 +2,7 @@ package com.alishangtian.macos.remoting;
 
 import io.netty.channel.Channel;
 
-/**
- * @author ubuntu
- */
+
 public interface ChannelEventListener {
     void onChannelConnect(final String remoteAddr, final Channel channel);
 

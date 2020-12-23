@@ -17,40 +17,22 @@ import redis.clients.jedis.JedisCluster;
  **/
 @Configuration
 public class ServerConfiguration {
-    @ConfigurationProperties(prefix = "xtimer.server")
+    @ConfigurationProperties(prefix = "macos.server")
     @Bean
     public NettyServerConfig nettyServerConfig() {
         return new NettyServerConfig();
     }
 
-    @ConfigurationProperties(prefix = "xtimer.client")
+    @ConfigurationProperties(prefix = "macos.client")
     @Bean
     public NettyClientConfig nettyClientConfig() {
         return new NettyClientConfig();
     }
 
-    @ConfigurationProperties(prefix = "xtimer.broker")
+    @ConfigurationProperties(prefix = "macos.broker")
     @Bean
     public BrokerConfig brokerConfig() {
         return new BrokerConfig();
-    }
-
-    @ConfigurationProperties(prefix = "xtimer.redis")
-    @Bean
-    public JedisClusterConfig jedisClusterConfig() {
-        return new JedisClusterConfig();
-    }
-
-    @ConfigurationProperties(prefix = "xtimer.scanner")
-    @Bean
-    public ScannerConfig scannerConfig() {
-        return new ScannerConfig();
-    }
-
-    @Bean
-    @DependsOn("jedisClusterConfig")
-    public JedisCluster jedisCluster() {
-        return JedisPoolFactory.getJedisCluster(jedisClusterConfig().getNodes(), jedisClusterConfig().getTimeout());
     }
 
 }

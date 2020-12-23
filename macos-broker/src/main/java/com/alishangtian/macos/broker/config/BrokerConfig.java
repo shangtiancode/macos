@@ -19,4 +19,5 @@ public class BrokerConfig {
     private long keepLeadingInterval;
     private long checkFollowerInterval;
     private int partitionCount;
+    private String clusterNodes;
 }
