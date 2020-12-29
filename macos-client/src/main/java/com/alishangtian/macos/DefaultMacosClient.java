@@ -1,10 +1,10 @@
-package com.alishangtian.macos.macos;
+package com.alishangtian.macos;
 
 import com.alishangtian.macos.common.protocol.RequestCode;
-import com.alishangtian.macos.macos.config.ClientConfig;
-import com.alishangtian.macos.macos.event.DefaultChannelEventListener;
-import com.alishangtian.macos.macos.processor.InvokeMacosProcessor;
-import com.alishangtian.macos.macos.processor.MacosProcessor;
+import com.alishangtian.macos.config.ClientConfig;
+import com.alishangtian.macos.event.DefaultChannelEventListener;
+import com.alishangtian.macos.processor.InvokeMacosProcessor;
+import com.alishangtian.macos.processor.MacosProcessor;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import lombok.Builder;

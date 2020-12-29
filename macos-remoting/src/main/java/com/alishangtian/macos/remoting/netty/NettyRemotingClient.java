@@ -29,6 +29,7 @@ import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -49,7 +50,14 @@ public class NettyRemotingClient extends AbstractNettyRemoting implements Remoti
     private final Lock lockChannelTables = new ReentrantLock();
     private final ConcurrentMap<String, ChannelWrapper> channelTables = new ConcurrentHashMap<>();
 
-    private final Timer timer = new Timer("ClientHouseKeepingService", true);
+    private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
+        AtomicLong num = new AtomicLong();
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "ClientHouseKeepingService-thread-" + num.getAndIncrement());
+        }
+    });
 
     private final AtomicReference<List<String>> namesrvAddrList = new AtomicReference<List<String>>();
     private final AtomicReference<String> namesrvAddrChoosed = new AtomicReference<String>();
@@ -153,16 +161,8 @@ public class NettyRemotingClient extends AbstractNettyRemoting implements Remoti
                     }
                 });
 
-        this.timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    NettyRemotingClient.this.scanResponseTable();
-                } catch (Throwable e) {
-                    log.error("scanResponseTable exception", e);
-                }
-            }
-        }, 1000 * 3, 1000);
+        this.scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> NettyRemotingClient.this.scanResponseTable()
+                , 1000 * 3, 1000, TimeUnit.MILLISECONDS);
 
         if (this.channelEventListener != null) {
             this.nettyEventExecutor.start();
@@ -302,7 +302,7 @@ public class NettyRemotingClient extends AbstractNettyRemoting implements Remoti
     @Override
     public void shutdown() {
         try {
-            this.timer.cancel();
+            this.scheduledThreadPoolExecutor.shutdown();
 
             for (ChannelWrapper cw : this.channelTables.values()) {
                 this.closeChannel(null, cw.getChannel());

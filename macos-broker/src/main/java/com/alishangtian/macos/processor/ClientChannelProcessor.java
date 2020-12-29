@@ -1,5 +1,6 @@
 package com.alishangtian.macos.processor;
 
+import com.alishangtian.macos.broker.controller.BrokerStarter;
 import com.alishangtian.macos.remoting.ChannelEventListener;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.processor.NettyRequestProcessor;
@@ -22,9 +23,14 @@ import java.util.concurrent.CountDownLatch;
 public class ClientChannelProcessor implements ChannelEventListener, NettyRequestProcessor {
     private Map<String, Channel> activeChannel = new ConcurrentHashMap<>();
     private Map<String, CountDownLatch> countDownLatchMap = new ConcurrentHashMap<>();
+    private BrokerStarter brokerStarter;
 
     public void addCountdownLatch(String hostAddr, CountDownLatch countDownLatch) {
         countDownLatchMap.put(hostAddr, countDownLatch);
+    }
+
+    public ClientChannelProcessor(BrokerStarter brokerStarter) {
+        this.brokerStarter = brokerStarter;
     }
 
     @Override
@@ -40,22 +46,34 @@ public class ClientChannelProcessor implements ChannelEventListener, NettyReques
     @Override
     public void onChannelClose(String remoteAddr, Channel channel) {
         log.info("channel closed address {}", remoteAddr);
-        activeChannel.remove(remoteAddr);
+        removeChannel(remoteAddr);
     }
 
     @Override
     public void onChannelException(String remoteAddr, Channel channel) {
         log.info("channel exception address {}", remoteAddr);
-        activeChannel.remove(channel);
+        removeChannel(remoteAddr);
     }
 
     @Override
     public void onChannelIdle(String remoteAddr, Channel channel) {
+
     }
 
     @Override
     public Channel getChannel(String address) {
         return activeChannel.get(address);
+    }
+
+    @Override
+    public void removeChannel(String address) {
+        this.activeChannel.remove(address);
+        this.brokerStarter.removeKnownHost(address);
+    }
+
+    @Override
+    public Map<String, Channel> getActiveChannel() {
+        return this.activeChannel;
     }
 
     @Override

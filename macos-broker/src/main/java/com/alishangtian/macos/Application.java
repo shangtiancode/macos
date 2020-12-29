@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @Date once upon a time
  * @Author maoxiaobing
  **/
-@SpringBootApplication(scanBasePackages = "com.alishangtian.xtimer")
+@SpringBootApplication(scanBasePackages = "com.alishangtian.macos")
 @Log4j2
 public class Application {
     public static void main(String[] args) {

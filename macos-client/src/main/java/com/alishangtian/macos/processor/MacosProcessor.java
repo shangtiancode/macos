@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos.processor;
+package com.alishangtian.macos.processor;
 
 import com.alishangtian.macos.model.core.XtimerRequest;
 

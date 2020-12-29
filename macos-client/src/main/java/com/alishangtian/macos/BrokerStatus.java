@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos;
+package com.alishangtian.macos;
 
 import com.alishangtian.macos.model.metrics.XtimerMetrics;
 import lombok.AllArgsConstructor;

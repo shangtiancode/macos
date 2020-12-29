@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos;
+package com.alishangtian.macos;
 
 /**
  * @author shangtian

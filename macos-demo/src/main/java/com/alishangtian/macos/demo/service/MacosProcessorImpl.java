@@ -1,6 +1,6 @@
 package com.alishangtian.macos.demo.service;
 
-import com.alishangtian.macos.macos.processor.MacosProcessor;
+import com.alishangtian.macos.processor.MacosProcessor;
 import com.alishangtian.macos.model.core.XtimerRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

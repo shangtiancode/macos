@@ -1,7 +1,6 @@
 package com.alishangtian.macos.demo.controller;
 
-import com.alishangtian.macos.macos.DefaultMacosClient;
-import com.alishangtian.macos.macos.MacosClient;
+import com.alishangtian.macos.DefaultMacosClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

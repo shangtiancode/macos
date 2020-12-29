@@ -38,6 +38,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @Description NettyRemotingServer
@@ -55,7 +56,14 @@ public class NettyRemotingServer extends AbstractNettyRemoting implements Remoti
     private final ExecutorService publicExecutor;
     private final ChannelEventListener channelEventListener;
 
-    private final Timer timer = new Timer("ServerHouseKeepingService", true);
+    private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
+        AtomicLong num = new AtomicLong();
+
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "ServerHouseKeepingService-thread-" + num.getAndIncrement());
+        }
+    });
 
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
 
@@ -237,25 +245,15 @@ public class NettyRemotingServer extends AbstractNettyRemoting implements Remoti
             this.nettyEventExecutor.start();
         }
 
-        this.timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    NettyRemotingServer.this.scanResponseTable();
-                } catch (Throwable e) {
-                    log.error("scanResponseTable exception", e);
-                }
-            }
-        }, 1000 * 3, 1000);
+        this.scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> NettyRemotingServer.this.scanResponseTable(), 1000 * 3, 1000, TimeUnit.MILLISECONDS);
+
         log.info("netty server started host is {}", this.host);
     }
 
     @Override
     public void shutdown() {
         try {
-            if (this.timer != null) {
-                this.timer.cancel();
-            }
+            this.scheduledThreadPoolExecutor.shutdown();
             this.eventLoopGroupBoss.shutdownGracefully();
             this.eventLoopGroupSelector.shutdownGracefully();
             if (this.nettyEventExecutor != null) {

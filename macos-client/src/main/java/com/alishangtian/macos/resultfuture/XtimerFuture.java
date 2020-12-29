@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos.resultfuture;
+package com.alishangtian.macos.resultfuture;
 
 /**
  * @Description InsertXtimerFuture

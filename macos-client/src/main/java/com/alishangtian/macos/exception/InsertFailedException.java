@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos.exception;
+package com.alishangtian.macos.exception;
 
 /**
  * @Desc InsertFailedException

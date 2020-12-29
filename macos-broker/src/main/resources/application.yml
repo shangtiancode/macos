@@ -4,6 +4,7 @@ spring:
 macos:
   broker:
     clustername: lol
+    mode: CLUSTER
     host: 127.0.0.1
     leaderFailThreshold: 5
     joinClusterFailThreshold: 15

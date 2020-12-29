@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos.config;
+package com.alishangtian.macos.config;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

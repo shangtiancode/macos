@@ -9,6 +9,7 @@ import lombok.Data;
  */
 @Data
 public class BrokerConfig {
+    private String mode;
     private String clusterName;
     private boolean startScanner;
     private String host;

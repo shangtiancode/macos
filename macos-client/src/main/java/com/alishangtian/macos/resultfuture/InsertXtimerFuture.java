@@ -1,4 +1,4 @@
-package com.alishangtian.macos.macos.resultfuture;
+package com.alishangtian.macos.resultfuture;
 
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
