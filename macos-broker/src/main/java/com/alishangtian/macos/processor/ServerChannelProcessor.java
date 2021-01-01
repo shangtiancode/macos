@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
  **/
 @Log4j2
 public class ServerChannelProcessor implements ChannelEventListener, NettyRequestProcessor {
-    ConcurrentHashMap<String, Channel> channelMap = new ConcurrentHashMap<>();
     private BrokerStarter brokerStarter;
 
     public ServerChannelProcessor(BrokerStarter brokerStarter) {
@@ -56,19 +55,17 @@ public class ServerChannelProcessor implements ChannelEventListener, NettyReques
 
     @Override
     public void removeChannel(String address) {
-        this.channelMap.remove(address);
-        this.brokerStarter.removeKnownHost(address);
+        this.brokerStarter.removeChannel(address);
     }
 
     @Override
     public Map<String, Channel> getActiveChannel() {
-        return this.channelMap;
+        return null;
     }
 
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         PingRequestBody pingRequestBody = JSONUtils.parseObject(request.getLoad(), PingRequestBody.class);
-        this.channelMap.put(pingRequestBody.getHostAddress(), ctx.channel());
         this.brokerStarter.mergeKnownHosts(pingRequestBody.getHostAddress(), pingRequestBody.getKnownHosts());
         return XtimerCommand.builder().result(1).build();
     }

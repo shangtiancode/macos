@@ -5,9 +5,7 @@ import com.alishangtian.macos.common.protocol.PingRequestBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.enums.ModeEnum;
-import com.alishangtian.macos.processor.BrokerSpreadProposalProcessor;
-import com.alishangtian.macos.processor.ClientChannelProcessor;
-import com.alishangtian.macos.processor.ServerChannelProcessor;
+import com.alishangtian.macos.processor.*;
 import com.alishangtian.macos.remoting.ConnectFuture;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
@@ -17,6 +15,7 @@ import com.alishangtian.macos.remoting.exception.RemotingSendRequestException;
 import com.alishangtian.macos.remoting.exception.RemotingTimeoutException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.alishangtian.macos.remoting.netty.NettyRemotingServer;
+import com.google.common.collect.Maps;
 import io.netty.channel.Channel;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -73,6 +73,23 @@ public class BrokerStarter {
      * 知道的集群节点列表[127.0.0.1:10000,127.0.0.1:10001]
      */
     private Set<String> knownHosts = new CopyOnWriteArraySet();
+    /**
+     * 客户端订阅列表
+     */
+    private ConcurrentMap<String, ConcurrentMap<String, Channel>> subscriberChannels = Maps.newConcurrentMap();
+    /**
+     * 客户端发布列表
+     */
+    private ConcurrentMap<String, ConcurrentMap<String, Channel>> publisherChannels = Maps.newConcurrentMap();
+    /**
+     * 订阅客户端操作lock
+     */
+    private ReentrantLock clientChannelLock = new ReentrantLock();
+
+    /**
+     * 服务发布端操作lock
+     */
+    private ReentrantLock serviceChannelLock = new ReentrantLock();
 
     private ExecutorService executorService = new ThreadPoolExecutor(CORE_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : CORE_SIZE, MAX_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : MAX_SIZE, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
         AtomicLong num = new AtomicLong();
@@ -100,6 +117,10 @@ public class BrokerStarter {
         server = new NettyRemotingServer(nettyServerConfig, serverChannelProcessor);
         server.registerProcessor(RequestCode.BROKER_PING_REQUEST, serverChannelProcessor, executorService);
         server.registerProcessor(RequestCode.BROKER_SPREAD_PROPOSAL_REQUEST, new BrokerSpreadProposalProcessor(this), executorService);
+        server.registerProcessor(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST, new ClientSubscribeProcessor(this), executorService);
+        server.registerProcessor(RequestCode.SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST, new ServicePublishProcessor(this), executorService);
+        server.registerProcessor(RequestCode.GET_SERVICE_SUBSCRIBER_LIST_REQUEST, new GetServiceSubscriberProcessor(this), executorService);
+        server.registerProcessor(RequestCode.GET_SERVICE_PUBLISHER_LIST_REQUEST, new GetServicePublisherProcessor(this), executorService);
         server.start();
         client = new NettyRemotingClient(nettyClientConfig, clientChannelProcessor);
         client.start();
@@ -204,11 +225,65 @@ public class BrokerStarter {
     }
 
     /**
-     * 删除下线的节点
+     * 删除下线的客户端
      *
      * @param address
      */
-    public void removeKnownHost(String address) {
+    public void removeChannel(String address) {
+        clientChannelLock.lock();
+        try {
+            subscriberChannels.values().stream()
+                    .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(address))
+                    .collect(Collectors.toList()).get(0).remove(address);
+        } finally {
+            clientChannelLock.unlock();
+        }
+        serviceChannelLock.lock();
+        try {
+            publisherChannels.values().stream()
+                    .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(address))
+                    .collect(Collectors.toList()).get(0).remove(address);
+        } finally {
+            serviceChannelLock.unlock();
+        }
+    }
+
+    /**
+     * 添加订阅客户端
+     *
+     * @param service
+     * @param address
+     * @param channel
+     */
+    public void addSubscribeChannel(String service, String address, Channel channel) {
+        clientChannelLock.lock();
+        try {
+            ConcurrentMap<String, Channel> channelConcurrentHashMap = subscriberChannels.getOrDefault(service, Maps.newConcurrentMap());
+            channelConcurrentHashMap.put(address, channel);
+            subscriberChannels.put(service, channelConcurrentHashMap);
+        } finally {
+            clientChannelLock.unlock();
+        }
+
+    }
+
+    /**
+     * 添加服务发布channel
+     *
+     * @param service
+     * @param address
+     * @param channel
+     */
+    public void addPublishChannel(String service, String address, Channel channel) {
+        serviceChannelLock.lock();
+        try {
+            ConcurrentMap<String, Channel> channelConcurrentHashMap = publisherChannels.getOrDefault(service, Maps.newConcurrentMap());
+            channelConcurrentHashMap.put(address, channel);
+            publisherChannels.put(service, channelConcurrentHashMap);
+        } finally {
+            serviceChannelLock.unlock();
+        }
+
     }
 
 }

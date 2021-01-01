@@ -68,7 +68,6 @@ public class ClientChannelProcessor implements ChannelEventListener, NettyReques
     @Override
     public void removeChannel(String address) {
         this.activeChannel.remove(address);
-        this.brokerStarter.removeKnownHost(address);
     }
 
     @Override

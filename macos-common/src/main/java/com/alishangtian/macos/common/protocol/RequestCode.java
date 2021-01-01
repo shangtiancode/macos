@@ -21,4 +21,24 @@ public class RequestCode {
      */
     public static final int BROKER_SPREAD_PROPOSAL_TO_CLIENT_REQUEST = 103;
 
+    /**
+     * 客户端订阅服务请求
+     */
+    public static final int CLIENT_SUBSCRIBE_TO_BROKER_REQUEST = 104;
+
+    /**
+     * 服务发布方发布服务
+     */
+    public static final int SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST = 105;
+
+    /**
+     * 获取服务订阅列表
+     */
+    public static final int GET_SERVICE_SUBSCRIBER_LIST_REQUEST = 106;
+
+    /**
+     * 获取服务发布列表
+     */
+    public static final int GET_SERVICE_PUBLISHER_LIST_REQUEST = 107;
+
 }
