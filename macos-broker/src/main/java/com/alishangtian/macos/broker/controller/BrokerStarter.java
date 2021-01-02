@@ -121,6 +121,7 @@ public class BrokerStarter {
         server.registerProcessor(RequestCode.SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST, new ServicePublishProcessor(this), executorService);
         server.registerProcessor(RequestCode.GET_SERVICE_SUBSCRIBER_LIST_REQUEST, new GetServiceSubscriberProcessor(this), executorService);
         server.registerProcessor(RequestCode.GET_SERVICE_PUBLISHER_LIST_REQUEST, new GetServicePublisherProcessor(this), executorService);
+        server.registerProcessor(RequestCode.GET_BROKER_LIST_REQUEST, new GetBrokerListProcessor(this), executorService);
         server.start();
         client = new NettyRemotingClient(nettyClientConfig, clientChannelProcessor);
         client.start();
@@ -251,16 +252,18 @@ public class BrokerStarter {
     /**
      * 添加订阅客户端
      *
-     * @param service
+     * @param services
      * @param address
      * @param channel
      */
-    public void addSubscribeChannel(String service, String address, Channel channel) {
+    public void addSubscribeChannel(Set<String> services, String address, Channel channel) {
         clientChannelLock.lock();
         try {
-            ConcurrentMap<String, Channel> channelConcurrentHashMap = subscriberChannels.getOrDefault(service, Maps.newConcurrentMap());
-            channelConcurrentHashMap.put(address, channel);
-            subscriberChannels.put(service, channelConcurrentHashMap);
+            services.forEach(service -> {
+                ConcurrentMap<String, Channel> channelConcurrentHashMap = subscriberChannels.getOrDefault(service, Maps.newConcurrentMap());
+                channelConcurrentHashMap.put(address, channel);
+                subscriberChannels.put(service, channelConcurrentHashMap);
+            });
         } finally {
             clientChannelLock.unlock();
         }
@@ -270,20 +273,21 @@ public class BrokerStarter {
     /**
      * 添加服务发布channel
      *
-     * @param service
+     * @param services
      * @param address
      * @param channel
      */
-    public void addPublishChannel(String service, String address, Channel channel) {
+    public void addPublishChannel(Set<String> services, String address, Channel channel) {
         serviceChannelLock.lock();
         try {
-            ConcurrentMap<String, Channel> channelConcurrentHashMap = publisherChannels.getOrDefault(service, Maps.newConcurrentMap());
-            channelConcurrentHashMap.put(address, channel);
-            publisherChannels.put(service, channelConcurrentHashMap);
+            services.forEach(service -> {
+                ConcurrentMap<String, Channel> channelConcurrentHashMap = publisherChannels.getOrDefault(service, Maps.newConcurrentMap());
+                channelConcurrentHashMap.put(address, channel);
+                publisherChannels.put(service, channelConcurrentHashMap);
+            });
         } finally {
             serviceChannelLock.unlock();
         }
-
     }
 
 }

@@ -1,6 +1,7 @@
 package com.alishangtian.macos.processor;
 
 import com.alishangtian.macos.broker.controller.BrokerStarter;
+import com.alishangtian.macos.common.RemotingCommandResultEnums;
 import com.alishangtian.macos.remoting.ChannelEventListener;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.processor.NettyRequestProcessor;
@@ -77,8 +78,7 @@ public class ClientChannelProcessor implements ChannelEventListener, NettyReques
 
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
-        XtimerCommand response = XtimerCommand.builder().result(1).build();
-        return response;
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).build();
     }
 
     @Override

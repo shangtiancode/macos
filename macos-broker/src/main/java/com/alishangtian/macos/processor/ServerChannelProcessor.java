@@ -1,6 +1,7 @@
 package com.alishangtian.macos.processor;
 
 import com.alishangtian.macos.broker.controller.BrokerStarter;
+import com.alishangtian.macos.common.RemotingCommandResultEnums;
 import com.alishangtian.macos.common.protocol.PingRequestBody;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.remoting.ChannelEventListener;
@@ -67,7 +68,7 @@ public class ServerChannelProcessor implements ChannelEventListener, NettyReques
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         PingRequestBody pingRequestBody = JSONUtils.parseObject(request.getLoad(), PingRequestBody.class);
         this.brokerStarter.mergeKnownHosts(pingRequestBody.getHostAddress(), pingRequestBody.getKnownHosts());
-        return XtimerCommand.builder().result(1).build();
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).build();
     }
 
     @Override

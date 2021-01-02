@@ -1,6 +1,7 @@
 package com.alishangtian.macos.processor;
 
 import com.alishangtian.macos.broker.controller.BrokerStarter;
+import com.alishangtian.macos.common.RemotingCommandResultEnums;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.common.XtimerHelper;
@@ -25,7 +26,7 @@ public class GetServiceSubscriberProcessor implements NettyRequestProcessor {
 
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
-        return XtimerCommand.builder().result(1).load(JSONUtils.toJSONString(this.brokerStarter.getSubscriberChannels().get(String.valueOf(request.getLoad()))).getBytes()).build();
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(this.brokerStarter.getSubscriberChannels().get(String.valueOf(request.getLoad()))).getBytes()).build();
     }
 
     @Override

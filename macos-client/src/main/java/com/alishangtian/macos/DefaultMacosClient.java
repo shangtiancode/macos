@@ -1,24 +1,29 @@
 package com.alishangtian.macos;
 
+import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
+import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
-import com.alishangtian.macos.processor.InvokeMacosProcessor;
-import com.alishangtian.macos.processor.MacosProcessor;
+import com.alishangtian.macos.remoting.ConnectFuture;
+import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
+import com.alishangtian.macos.remoting.exception.RemotingConnectException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.netty.channel.Channel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @Description
+ * @Description 建立到集群的连接，并能订阅和发布服务
  * @ClassName DefaultXtimerClient
  * @Author alishangtian
  * @Date 2020/6/7 18:43
@@ -35,28 +40,118 @@ public class DefaultMacosClient implements MacosClient {
     private DefaultChannelEventListener defaultChannelEventListener;
     private ExecutorService publicExecutor;
     private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-    private MacosProcessor macosProcessor;
-
-    private final AtomicInteger connectLeaderFailCounter = new AtomicInteger(0);
-
-    private final ReentrantLock heartBeatLock = new ReentrantLock(true);
-
+    /**
+     * 注册中心节点列表
+     */
+    private Set<String> brokerSet;
+    /**
+     * 发布服务
+     */
+    private PublishServiceBody publishServiceBody;
+    /**
+     * 订阅服务
+     */
+    private Set<String> subscribeServices;
+    /**
+     * 注册中心集群列表
+     */
+    private Set<String> brokers;
 
     @Override
     public void start() {
         this.start0();
     }
 
-    public void start0() {
-        client = new NettyRemotingClient(config, defaultChannelEventListener);
-        client.registerProcessor(RequestCode.BROKER_SPREAD_PROPOSAL_TO_CLIENT_REQUEST,
-                InvokeMacosProcessor.builder().macosProcessor(macosProcessor).build(),
-                publicExecutor);
-        client.start();
-        scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> heartBeatToBroker(), 0L, clientConfig.getAskLeaderAndHeartBeatToFollowerInterval(), TimeUnit.MILLISECONDS);
+    @Override
+    public boolean publishService(String serviceServer, Set<String> services) {
+        publishServiceBody = PublishServiceBody.builder().serviceNames(services).serverHost(serviceServer).build();
+        scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+            for (String broker : brokers) {
+                try {
+                    connectHost(broker);
+                    XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
+                                    code(RequestCode.SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST)
+                                    .load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(),
+                            clientConfig.getConnectBrokerTimeout());
+                    if (!response.isSuccess()) {
+                        log.error("publish service {} error", JSONUtils.toJSONString(services));
+                    }
+                } catch (Exception e) {
+                    log.error("connect broker {} error {}", broker, e.getMessage(), e);
+                }
+            }
+        }, 0L, clientConfig.getPublisherHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
+        return true;
     }
 
-    private void heartBeatToBroker() {
+    @Override
+    public boolean subscribeService(Set<String> services) {
+        this.subscribeServices = services;
+        scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+            for (String broker : brokers) {
+                try {
+                    connectHost(broker);
+                    XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
+                                    code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(services).getBytes(StandardCharsets.UTF_8)).build(),
+                            clientConfig.getConnectBrokerTimeout());
+                    if (!response.isSuccess()) {
+                        log.error("publish service {} error", JSONUtils.toJSONString(services));
+                    }
+                } catch (Exception e) {
+                    log.error("connect broker {} error {}", broker, e.getMessage(), e);
+                }
+            }
+        }, 0L, clientConfig.getSubscriberHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
+        return true;
+    }
 
+    public void start0() {
+        client = new NettyRemotingClient(config, defaultChannelEventListener);
+        client.start();
+        String brokers = clientConfig.getMacosBrokers();
+        for (String broker : brokers.split(",")) {
+            try {
+                connectHost(broker);
+                XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().code(RequestCode.GET_BROKER_LIST_REQUEST).build(), clientConfig.getConnectBrokerTimeout());
+                if (response.isSuccess()) {
+                    Set<String> brokerSet = JSONUtils.parseObject(String.valueOf(response.getLoad()), new TypeReference<Set<String>>() {
+                    });
+                    if (null != brokerSet && !brokerSet.isEmpty()) {
+                        this.brokers = brokerSet;
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("connect host {} error {}", broker, e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * connectHost
+     *
+     * @param host
+     * @throws InterruptedException
+     * @throws RemotingConnectException
+     */
+    public void connectHost(final String host) throws InterruptedException, RemotingConnectException {
+        Channel channel;
+        if (null != (channel = this.defaultChannelEventListener.getChannel(host)) && channel.isActive()) {
+            return;
+        }
+        final ConnectFuture connectFuture = ConnectFuture.builder().build();
+        this.client.connect(host).addListener(future -> {
+            if (future.isSuccess()) {
+                log.info("connect broker {} send success", host);
+                this.defaultChannelEventListener.addCountdownLatch(host, connectFuture.getCountDownLatch());
+            } else {
+                connectFuture.connectError(host);
+            }
+        });
+        connectFuture.await();
+        if (null != connectFuture.getRemotingConnectException()) {
+            throw connectFuture.getRemotingConnectException();
+        }
+        log.info("connect broker {} success", host);
     }
 }

@@ -15,11 +15,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClientConfig {
-    private String registers;
+    private String macosBrokers;
     private int timeout;
     private String groupKey;
     private String appKey;
-    private String clusterName;
-    private long askLeaderAndHeartBeatToFollowerInterval = 3000L;
-    private boolean clientEnabled;
+    private long connectBrokerTimeout = 5000L;
+    private long publisherHeartBeatTimeInterval = 5000L;
+    private long subscriberHeartBeatTimeInterval = 5000L;
 }

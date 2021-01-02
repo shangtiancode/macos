@@ -41,4 +41,9 @@ public class RequestCode {
      */
     public static final int GET_SERVICE_PUBLISHER_LIST_REQUEST = 107;
 
+    /**
+     * 获取集群节点列表
+     */
+    public static final int GET_BROKER_LIST_REQUEST = 108;
+
 }

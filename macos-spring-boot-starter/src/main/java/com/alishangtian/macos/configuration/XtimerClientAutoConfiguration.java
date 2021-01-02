@@ -3,9 +3,7 @@ package com.alishangtian.macos.configuration;
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
-import com.alishangtian.macos.processor.MacosProcessor;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -26,8 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Configuration
 @ConditionalOnProperty(name = "macos.config.clientEnabled", havingValue = "true")
 public class XtimerClientAutoConfiguration {
-    @Autowired
-    MacosProcessor macosProcessor;
 
     @Bean
     @ConditionalOnMissingBean(NettyClientConfig.class)
@@ -50,12 +46,11 @@ public class XtimerClientAutoConfiguration {
 
             @Override
             public Thread newThread(Runnable runnable) {
-                return new Thread(runnable, "xtimer-client-scheduled-pool-thread-" + nums.getAndIncrement());
+                return new Thread(runnable, "macos-client-scheduled-pool-thread-" + nums.getAndIncrement());
             }
         });
         DefaultMacosClient client = DefaultMacosClient.builder()
                 .config(nettyClientConfig)
-                .macosProcessor(macosProcessor)
                 .defaultChannelEventListener(new DefaultChannelEventListener())
                 .clientConfig(clientConfig)
                 .scheduledThreadPoolExecutor(scheduledThreadPoolExecutor)
