@@ -1,5 +1,6 @@
 package com.alishangtian.macos.mubbo.configuration;
 
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -15,10 +16,10 @@ public class MubboServerConfig {
     private String host;
     private int leaderFailThreshold;
     private int joinClusterFailThreshold;
-    private long timeoutThreshold;
+    private long timeoutThreshold = 5000L;
     private long heartbeatInterval;
     private long keepLeadingInterval;
     private long checkFollowerInterval;
     private int partitionCount;
-    private String clusterNodes;
+    private String macosNodes;
 }

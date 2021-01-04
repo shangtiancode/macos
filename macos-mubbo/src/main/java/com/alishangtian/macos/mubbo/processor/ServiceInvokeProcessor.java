@@ -24,7 +24,7 @@ public class ServiceInvokeProcessor implements NettyRequestProcessor {
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         this.mubboServer.addSubscriber(String.valueOf(request.getLoad()), XtimerHelper.parseChannelRemoteAddr(ctx.channel()), ctx.channel());
-        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).build();
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(mubboServer.invokeServiceInvoke(String.valueOf(request.getLoad()))).build();
     }
 
     @Override

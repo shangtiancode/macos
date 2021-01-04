@@ -34,6 +34,13 @@ public class MubboConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(NettyClientConfig.class)
+    @ConfigurationProperties(prefix = "mubbo.client")
+    public NettyClientConfig nettyClientConfig() {
+        return new NettyClientConfig();
+    }
+    
+    @Bean
     @ConditionalOnMissingBean(MubboServerConfig.class)
     @ConfigurationProperties(prefix = "mubbo.server")
     public MubboServerConfig mubboServerConfig() {
@@ -41,8 +48,12 @@ public class MubboConfiguration {
     }
 
     @Bean("mubboServer")
-    public MubboServer mubboServer(NettyServerConfig nettyServerConfig, MubboServerConfig mubboServerConfig) {
-        MubboServer mubboServer = MubboServer.builder().mubboServerConfig(mubboServerConfig).nettyServerConfig(nettyServerConfig).build();
+    public MubboServer mubboServer(NettyServerConfig nettyServerConfig, MubboServerConfig mubboServerConfig, NettyClientConfig nettyClientConfig) {
+        MubboServer mubboServer = MubboServer.builder()
+                .mubboServerConfig(mubboServerConfig)
+                .nettyClientConfig(nettyClientConfig)
+                .nettyServerConfig(nettyServerConfig)
+                .build();
         return mubboServer;
     }
 }
