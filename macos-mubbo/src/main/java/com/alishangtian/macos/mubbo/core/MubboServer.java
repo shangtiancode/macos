@@ -1,5 +1,6 @@
 package com.alishangtian.macos.mubbo.core;
 
+import com.alishangtian.macos.common.protocol.InvokeResult;
 import com.alishangtian.macos.common.protocol.InvokeServiceBody;
 import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
@@ -22,10 +23,15 @@ import io.netty.channel.Channel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -218,14 +224,26 @@ public class MubboServer {
 
     /**
      * 执行服务回调
-     * todo 实现方法执行和返回
      *
      * @param invokeServiceBody
      * @return
      */
     public byte[] invokeServiceInvoke(InvokeServiceBody invokeServiceBody) {
         PublishServiceBody publishServiceBody = this.publisherChannels.get(invokeServiceBody.getServiceName());
-        return new byte[]{};
+        String serviceName = publishServiceBody.getServiceName();
+        if (serviceName.contains("/")) {
+            serviceName = StringUtils.split(serviceName, "/")[1];
+        }
+        Method method = ReflectionUtils.findMethod(publishServiceBody.getBean().getClass(), serviceName);
+        if (null != method) {
+            try {
+                Object result = method.invoke(publishServiceBody.getBean(), Arrays.asList(invokeServiceBody.getParameterValues()));
+                return JSONUtils.toJSONString(result).getBytes(StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                log.error("invoke service {} error , parameters {}", serviceName, invokeServiceBody.getParameterValues(), e);
+            }
+        }
+        return new byte[0];
     }
 
     /**

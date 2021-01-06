@@ -1,5 +1,6 @@
 package com.alishangtian.macos;
 
+import com.alishangtian.macos.common.protocol.InvokeServiceBody;
 import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
 import com.alishangtian.macos.common.util.JSONUtils;
@@ -9,6 +10,9 @@ import com.alishangtian.macos.remoting.ConnectFuture;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.exception.RemotingConnectException;
+import com.alishangtian.macos.remoting.exception.RemotingException;
+import com.alishangtian.macos.remoting.exception.RemotingSendRequestException;
+import com.alishangtian.macos.remoting.exception.RemotingTimeoutException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
@@ -96,6 +100,15 @@ public class DefaultMacosClient implements MacosClient {
     @Override
     public byte[] invokeService(String service, List<Object> parameters) {
         PublishServiceBody publishServiceBody = getServiceProviderWithLoadBalance(service);
+        try {
+            connectHost(publishServiceBody.getServerHost());
+            XtimerCommand response = this.client.invokeSync(publishServiceBody.getServerHost(), XtimerCommand.builder().load(JSONUtils.toJSONString(InvokeServiceBody.builder().serviceName(service).parameterValues(parameters).build()).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
+            return response.getLoad();
+        } catch (InterruptedException e) {
+            log.error("invoke service {} error", service, e);
+        } catch (RemotingException e) {
+            log.error("invoke service {} error", service, e);
+        }
         return new byte[0];
     }
 
