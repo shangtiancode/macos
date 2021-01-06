@@ -45,12 +45,14 @@ public class RequestCode {
      * 获取集群节点列表
      */
     public static final int GET_BROKER_LIST_REQUEST = 108;
+
     /**
      * 服务客户端向服务server订阅服务
      */
     public static final int CLIENT_SUBSCRIBE_SERVICE_TO_SERVER = 109;
+    
     /**
-     * 服务客户端向服务server氢气球服务
+     * 服务客户端向服务server请求服务
      */
     public static final int CLIENT_INVOKE_SERVICE_TO_SERVER = 110;
 

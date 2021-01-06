@@ -19,11 +19,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PublishServiceBody implements Serializable {
-    /**
-     * 服务发布者节点地址
-     */
-    private String serverHost;
+public class InvokeServiceBody implements Serializable {
     /**
      * 服务名称
      */
@@ -31,16 +27,5 @@ public class PublishServiceBody implements Serializable {
     /**
      * 服务参数类名列表
      */
-    private List<String> parameters;
-    /**
-     * 服务相关bean
-     */
-    @JsonIgnore
-    private Object bean;
-
-    /**
-     * 服务相关beanName
-     */
-    @JsonIgnore
-    private Object beanName;
+    private List<Object> parameterValues;
 }

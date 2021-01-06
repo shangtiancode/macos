@@ -11,16 +11,19 @@ import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.exception.RemotingConnectException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Maps;
 import io.netty.channel.Channel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @Description 建立到集群的连接，并能订阅和发布服务
@@ -49,13 +52,18 @@ public class DefaultMacosClient implements MacosClient {
      */
     private PublishServiceBody publishServiceBody;
     /**
-     * 订阅服务
-     */
-    private Set<String> subscribeServices;
-    /**
      * 注册中心集群列表
      */
     private Set<String> brokers;
+
+    /**
+     * 客户端订阅服务列表
+     */
+    private ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> subscribeServicesWrapper = Maps.newConcurrentMap();
+    /**
+     * 订阅服务列表
+     */
+    private Set<String> subscribeServices;
 
     @Override
     public void start() {
@@ -63,30 +71,8 @@ public class DefaultMacosClient implements MacosClient {
     }
 
     @Override
-    public boolean publishService(String serviceServer, Set<String> services) {
-        publishServiceBody = PublishServiceBody.builder().serviceNames(services).serverHost(serviceServer).build();
-        scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-            for (String broker : brokers) {
-                try {
-                    connectHost(broker);
-                    XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
-                                    code(RequestCode.SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST)
-                                    .load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(),
-                            clientConfig.getConnectBrokerTimeout());
-                    if (!response.isSuccess()) {
-                        log.error("publish service {} error", JSONUtils.toJSONString(services));
-                    }
-                } catch (Exception e) {
-                    log.error("connect broker {} error {}", broker, e.getMessage(), e);
-                }
-            }
-        }, 0L, clientConfig.getPublisherHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
-        return true;
-    }
-
-    @Override
     public boolean subscribeService(Set<String> services) {
-        this.subscribeServices = services;
+        subscribeServices = services;
         scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
             for (String broker : brokers) {
                 try {
@@ -97,12 +83,37 @@ public class DefaultMacosClient implements MacosClient {
                     if (!response.isSuccess()) {
                         log.error("publish service {} error", JSONUtils.toJSONString(services));
                     }
+                    this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
+                    });
                 } catch (Exception e) {
                     log.error("connect broker {} error {}", broker, e.getMessage(), e);
                 }
             }
         }, 0L, clientConfig.getSubscriberHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    @Override
+    public byte[] invokeService(String service, List<Object> parameters) {
+        PublishServiceBody publishServiceBody = getServiceProviderWithLoadBalance(service);
+        return new byte[0];
+    }
+
+    /**
+     * 通过负载均衡获取服务发布者列表
+     * todo 负载均衡逻辑实现
+     *
+     * @param service
+     * @return
+     */
+    public PublishServiceBody getServiceProviderWithLoadBalance(String service) {
+        ConcurrentMap<String, PublishServiceBody> serviceBodyConcurrentMap = this.subscribeServicesWrapper.get(service);
+        if (null != serviceBodyConcurrentMap) {
+            List<PublishServiceBody> publishServiceBodies = new ArrayList<>(serviceBodyConcurrentMap.values());
+            Collections.shuffle(publishServiceBodies);
+            return publishServiceBodies.get(0);
+        }
+        return null;
     }
 
     public void start0() {

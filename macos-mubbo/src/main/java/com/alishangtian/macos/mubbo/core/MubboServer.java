@@ -1,5 +1,7 @@
 package com.alishangtian.macos.mubbo.core;
 
+import com.alishangtian.macos.common.protocol.InvokeServiceBody;
+import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.mubbo.configuration.MubboServerConfig;
@@ -22,6 +24,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,6 +57,8 @@ public class MubboServer {
     private static final int MAX_SIZE = CORE_SIZE + 4;
     private static final int MIN_WORKER_THREAD_COUNT = 8;
     private static final int MIN_SCHEDULE_WORKER_THREAD_COUNT = 4;
+    private static final String MACOS_SERVER_NODES_DELIMITER = ",";
+
     /**
      * 本机地址
      */
@@ -79,6 +86,11 @@ public class MubboServer {
      * 配置中心节点列表
      */
     private Set<String> knowHosts;
+
+    /**
+     * 客户端发布列表 <服务名称,服务详细信息>
+     */
+    private ConcurrentMap<String, PublishServiceBody> publisherChannels = Maps.newConcurrentMap();
 
     /**
      * 启动mubbo server
@@ -144,58 +156,75 @@ public class MubboServer {
      * @param serviceName
      * @return
      */
-    public boolean publishService(String serviceName) {
+    public boolean publishService(String serviceName, Object bean, String beanName, Parameter[] parameters) {
         Set<String> remoteHosts = null;
+        PublishServiceBody publishServiceBody = PublishServiceBody.builder()
+                .serviceName(serviceName)
+                .serverHost(this.hostAddress)
+                .parameters(getParameterList(parameters))
+                .bean(bean).beanName(beanName)
+                .build();
         if (null != knowHosts && knowHosts.size() > 0) {
             for (String knowHost : knowHosts) {
-                if (null != (remoteHosts = publishService(knowHost, serviceName)) && remoteHosts.size() > 0) {
+                if (null != (remoteHosts = publishService(knowHost, publishServiceBody)) && remoteHosts.size() > 0) {
                     break;
                 }
             }
         } else {
             String macosNodes = this.mubboServerConfig.getMacosNodes();
-            for (String host : StringUtils.split(macosNodes, ",")) {
-                if (null != (remoteHosts = publishService(host, serviceName)) && remoteHosts.size() > 0) {
+            for (String host : StringUtils.split(macosNodes, MACOS_SERVER_NODES_DELIMITER)) {
+                if (null != (remoteHosts = publishService(host, publishServiceBody)) && remoteHosts.size() > 0) {
                     break;
                 }
             }
         }
         if (null != remoteHosts && remoteHosts.size() > 0) {
             knowHosts = remoteHosts;
+            publisherChannels.putIfAbsent(serviceName, publishServiceBody);
             return true;
         }
         return false;
     }
 
+    public List<String> getParameterList(Parameter[] parameters) {
+        List<String> parameterList = new ArrayList<>();
+        for (Parameter parameter : parameters) {
+            parameterList.add(parameter.getType().getName());
+        }
+        return parameterList;
+    }
+
     /**
      * 发布服务
      *
-     * @param host
-     * @param serviceName
+     * @param macosHost
+     * @param publishServiceBody
      * @return
      */
-    public Set<String> publishService(String host, String serviceName) {
+    public Set<String> publishService(String macosHost, PublishServiceBody publishServiceBody) {
         try {
-            connectHost(host);
-            XtimerCommand response = this.client.invokeSync(host, XtimerCommand.builder().code(RequestCode.SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST).load(serviceName.getBytes()).build(), 5000L);
+            connectHost(macosHost);
+            XtimerCommand response = this.client.invokeSync(macosHost, XtimerCommand.builder().code(RequestCode.SERVICE_SERVER_PUBLISH_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(publishServiceBody).getBytes()).build(), 5000L);
             if (!response.isSuccess()) {
                 return null;
             }
             return JSONUtils.parseObject(response.getLoad(), new TypeReference<Set<String>>() {
             });
         } catch (Exception e) {
-            log.error("publishService.connecthost {} error {}", host, e.getMessage(), e);
+            log.error("publishService.connecthost {} error {}", macosHost, e.getMessage(), e);
         }
         return null;
     }
 
     /**
      * 执行服务回调
+     * todo 实现方法执行和返回
      *
-     * @param serviceName
+     * @param invokeServiceBody
      * @return
      */
-    public byte[] invokeServiceInvoke(String serviceName) {
+    public byte[] invokeServiceInvoke(InvokeServiceBody invokeServiceBody) {
+        PublishServiceBody publishServiceBody = this.publisherChannels.get(invokeServiceBody.getServiceName());
         return new byte[]{};
     }
 

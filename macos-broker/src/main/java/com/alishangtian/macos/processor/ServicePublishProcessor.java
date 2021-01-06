@@ -5,7 +5,6 @@ import com.alishangtian.macos.common.RemotingCommandResultEnums;
 import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.remoting.XtimerCommand;
-import com.alishangtian.macos.remoting.common.XtimerHelper;
 import com.alishangtian.macos.remoting.processor.NettyRequestProcessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
@@ -30,7 +29,7 @@ public class ServicePublishProcessor implements NettyRequestProcessor {
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         PublishServiceBody publishServiceBody = JSONUtils.parseObject(request.getLoad(), new TypeReference<PublishServiceBody>() {
         });
-        this.brokerStarter.addPublishChannel(publishServiceBody.getServiceNames(), publishServiceBody.getServerHost(), ctx.channel());
+        this.brokerStarter.addPublishChannel(publishServiceBody);
         return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(this.brokerStarter.getKnownHosts()).getBytes()).build();
     }
 

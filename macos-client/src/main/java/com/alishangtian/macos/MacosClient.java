@@ -1,5 +1,6 @@
 package com.alishangtian.macos;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -13,16 +14,18 @@ public interface MacosClient {
     void start();
 
     /**
-     * 发布服务到macos集群
-     *
-     * @return
-     */
-    boolean publishService(String serviceServer, Set<String> services);
-
-    /**
      * 向macos集群订阅服务
      *
+     * @param services
      * @return
      */
     boolean subscribeService(Set<String> services);
+
+    /**
+     * 客户端请求远程服务
+     *
+     * @param service
+     * @return
+     */
+    byte[] invokeService(String service, List<Object> parameters);
 }

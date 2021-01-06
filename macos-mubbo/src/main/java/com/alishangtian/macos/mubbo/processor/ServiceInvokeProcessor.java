@@ -1,10 +1,13 @@
 package com.alishangtian.macos.mubbo.processor;
 
 import com.alishangtian.macos.common.RemotingCommandResultEnums;
+import com.alishangtian.macos.common.protocol.InvokeServiceBody;
+import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.mubbo.core.MubboServer;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.common.XtimerHelper;
 import com.alishangtian.macos.remoting.processor.NettyRequestProcessor;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,7 +27,8 @@ public class ServiceInvokeProcessor implements NettyRequestProcessor {
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         this.mubboServer.addSubscriber(String.valueOf(request.getLoad()), XtimerHelper.parseChannelRemoteAddr(ctx.channel()), ctx.channel());
-        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(mubboServer.invokeServiceInvoke(String.valueOf(request.getLoad()))).build();
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(mubboServer.invokeServiceInvoke(JSONUtils.parseObject(request.getLoad(), new TypeReference<InvokeServiceBody>() {
+        }))).build();
     }
 
     @Override

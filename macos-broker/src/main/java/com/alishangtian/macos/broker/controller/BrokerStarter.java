@@ -2,6 +2,7 @@ package com.alishangtian.macos.broker.controller;
 
 import com.alishangtian.macos.broker.config.BrokerConfig;
 import com.alishangtian.macos.common.protocol.PingRequestBody;
+import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.enums.ModeEnum;
@@ -78,9 +79,9 @@ public class BrokerStarter {
      */
     private ConcurrentMap<String, ConcurrentMap<String, Channel>> subscriberChannels = Maps.newConcurrentMap();
     /**
-     * 客户端发布列表
+     * 客户端发布列表 <服务名称<server地址，服务详细信息>>
      */
-    private ConcurrentMap<String, ConcurrentMap<String, Channel>> publisherChannels = Maps.newConcurrentMap();
+    private ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> publisherChannels = Maps.newConcurrentMap();
     /**
      * 订阅客户端操作lock
      */
@@ -243,7 +244,7 @@ public class BrokerStarter {
         try {
             publisherChannels.values().stream()
                     .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(address))
-                    .collect(Collectors.toList()).get(0).remove(address);
+                    .collect(Collectors.toList()).stream().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(address));
         } finally {
             serviceChannelLock.unlock();
         }
@@ -256,7 +257,8 @@ public class BrokerStarter {
      * @param address
      * @param channel
      */
-    public void addSubscribeChannel(Set<String> services, String address, Channel channel) {
+    public ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> addSubscribeChannel(Set<String> services, String address, Channel channel) {
+        ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> publishServices = Maps.newConcurrentMap();
         clientChannelLock.lock();
         try {
             services.forEach(service -> {
@@ -267,27 +269,33 @@ public class BrokerStarter {
         } finally {
             clientChannelLock.unlock();
         }
-
+        return publishServices;
     }
 
     /**
      * 添加服务发布channel
      *
-     * @param services
-     * @param address
-     * @param channel
+     * @param publishServiceBody
      */
-    public void addPublishChannel(Set<String> services, String address, Channel channel) {
+    public void addPublishChannel(PublishServiceBody publishServiceBody) {
         serviceChannelLock.lock();
         try {
-            services.forEach(service -> {
-                ConcurrentMap<String, Channel> channelConcurrentHashMap = publisherChannels.getOrDefault(service, Maps.newConcurrentMap());
-                channelConcurrentHashMap.put(address, channel);
-                publisherChannels.put(service, channelConcurrentHashMap);
-            });
+            ConcurrentMap<String, PublishServiceBody> publishServiceBodyConcurrentMap = publisherChannels.getOrDefault(publishServiceBody.getServiceName(), Maps.newConcurrentMap());
+            publishServiceBodyConcurrentMap.put(publishServiceBody.getServerHost(), publishServiceBody);
+            publisherChannels.put(publishServiceBody.getServiceName(), publishServiceBodyConcurrentMap);
         } finally {
             serviceChannelLock.unlock();
         }
+    }
+
+    /**
+     * 获取客户端订阅服务列表
+     *
+     * @param services
+     * @return
+     */
+    public ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> getPublishServiceBodys(Set<String> services) {
+        return null;
     }
 
 }
