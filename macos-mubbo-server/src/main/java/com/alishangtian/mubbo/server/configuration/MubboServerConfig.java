@@ -1,4 +1,4 @@
-package com.alishangtian.macos.mubbo.configuration;
+package com.alishangtian.mubbo.server.configuration;
 
 import lombok.Builder;
 import lombok.Data;

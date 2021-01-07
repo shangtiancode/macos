@@ -265,6 +265,7 @@ public class BrokerStarter {
                 ConcurrentMap<String, Channel> channelConcurrentHashMap = subscriberChannels.getOrDefault(service, Maps.newConcurrentMap());
                 channelConcurrentHashMap.put(address, channel);
                 subscriberChannels.put(service, channelConcurrentHashMap);
+                publishServices.put(service, this.publisherChannels.get(service));
             });
         } finally {
             clientChannelLock.unlock();

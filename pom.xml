@@ -17,7 +17,8 @@
         <module>macos-client</module>
         <module>macos-demo</module>
         <module>macos-model</module>
-        <module>macos-mubbo</module>
+        <module>macos-mubbo-server</module>
+        <module>macos-mubbo-client</module>
     </modules>
 
     <parent>

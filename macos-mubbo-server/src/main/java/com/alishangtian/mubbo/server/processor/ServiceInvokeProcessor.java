@@ -1,9 +1,9 @@
-package com.alishangtian.macos.mubbo.processor;
+package com.alishangtian.mubbo.server.processor;
 
 import com.alishangtian.macos.common.RemotingCommandResultEnums;
 import com.alishangtian.macos.common.protocol.InvokeServiceBody;
 import com.alishangtian.macos.common.util.JSONUtils;
-import com.alishangtian.macos.mubbo.core.MubboServer;
+import com.alishangtian.mubbo.server.core.MubboServer;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.common.XtimerHelper;
 import com.alishangtian.macos.remoting.processor.NettyRequestProcessor;

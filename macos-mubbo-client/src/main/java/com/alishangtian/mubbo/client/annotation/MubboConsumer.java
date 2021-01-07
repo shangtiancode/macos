@@ -1,4 +1,4 @@
-package com.alishangtian.macos.mubbo.annotation;
+package com.alishangtian.mubbo.client.annotation;
 
 import org.springframework.stereotype.Component;
 
