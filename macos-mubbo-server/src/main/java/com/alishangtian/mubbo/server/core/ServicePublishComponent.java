@@ -4,6 +4,7 @@ import com.alishangtian.mubbo.server.annotation.MubboService;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import java.lang.reflect.Parameter;
  */
 @DependsOn("mubboServer")
 @Component
+@ConditionalOnProperty(name = "mubbo.server.use", havingValue = "true")
 public class ServicePublishComponent implements BeanPostProcessor {
 
     @Autowired
@@ -46,22 +48,14 @@ public class ServicePublishComponent implements BeanPostProcessor {
         Method[] methods = ReflectionUtils.getDeclaredMethods(bean.getClass());
         for (Method method : methods) {
             MubboService methodMubboService = method.getAnnotation(MubboService.class);
-            Parameter[] parameters = method.getParameters();
             if (null != methodMubboService) {
+                Parameter[] parameters = method.getParameters();
                 String methodServiceName = methodMubboService.value();
                 if (StringUtils.isEmpty(methodServiceName)) {
                     methodServiceName = method.getName();
                 }
                 String serviceName = null == serviceClass ? methodServiceName : serviceClass + "/" + methodServiceName;
                 mubboServer.publishService(serviceName, bean, beanName, parameters);
-                
-                Method method1 = ReflectionUtils.findMethod(bean.getClass(), "");
-                Object[] parameterss = new Object[]{};
-                try {
-                    method1.invoke(bean, parameterss);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
             }
         }
         return bean;

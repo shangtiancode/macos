@@ -27,11 +27,11 @@
         </dependency>
         <dependency>
             <groupId>com.alishangtian.macos</groupId>
-            <artifactId>macos-spring-boot-starter</artifactId>
+            <artifactId>macos-mubbo-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.alishangtian.macos</groupId>
-            <artifactId>macos-common</artifactId>
+            <artifactId>macos-mubbo-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

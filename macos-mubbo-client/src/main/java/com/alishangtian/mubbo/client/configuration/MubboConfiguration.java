@@ -4,7 +4,6 @@ import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
-import com.alishangtian.macos.remoting.config.NettyServerConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -22,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Date 2021/1/3 12:06
  */
 @Configuration
-@ConditionalOnProperty(name = "mubbo.client.use", havingValue = "true")
+@ConditionalOnProperty(name = "mubbo.consumer.use", havingValue = "true")
 public class MubboConfiguration {
 
     @Bean

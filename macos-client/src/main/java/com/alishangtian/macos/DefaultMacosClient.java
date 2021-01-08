@@ -20,14 +20,12 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @Description 建立到集群的连接，并能订阅和发布服务
@@ -67,7 +65,11 @@ public class DefaultMacosClient implements MacosClient {
     /**
      * 订阅服务列表
      */
-    private Set<String> subscribeServices;
+    private Set<String> subscribeServices = new HashSet<>();
+    /**
+     * 标识一下定时任务是否开启
+     */
+    private final AtomicBoolean schedulerStarted = new AtomicBoolean(false);
 
     @Override
     public void start() {
@@ -75,25 +77,27 @@ public class DefaultMacosClient implements MacosClient {
     }
 
     @Override
-    public boolean subscribeService(Set<String> services) {
-        subscribeServices = services;
-        scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-            for (String broker : brokers) {
-                try {
-                    connectHost(broker);
-                    XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
-                                    code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(services).getBytes(StandardCharsets.UTF_8)).build(),
-                            clientConfig.getConnectBrokerTimeout());
-                    if (!response.isSuccess()) {
-                        log.error("publish service {} error", JSONUtils.toJSONString(services));
+    public boolean subscribeService(String service) {
+        subscribeServices.add(service);
+        if (schedulerStarted.compareAndSet(false, true)) {
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+                for (String broker : brokers) {
+                    try {
+                        connectHost(broker);
+                        XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
+                                        code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(service).getBytes(StandardCharsets.UTF_8)).build(),
+                                clientConfig.getConnectBrokerTimeout());
+                        if (!response.isSuccess()) {
+                            log.error("publish service {} error", JSONUtils.toJSONString(service));
+                        }
+                        this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
+                        });
+                    } catch (Exception e) {
+                        log.error("connect broker {} error {}", broker, e.getMessage(), e);
                     }
-                    this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
-                    });
-                } catch (Exception e) {
-                    log.error("connect broker {} error {}", broker, e.getMessage(), e);
                 }
-            }
-        }, 0L, clientConfig.getSubscriberHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
+            }, 0L, clientConfig.getSubscriberHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
+        }
         return true;
     }
 

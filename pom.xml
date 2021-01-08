@@ -113,6 +113,16 @@
             </dependency>
             <dependency>
                 <groupId>com.alishangtian.macos</groupId>
+                <artifactId>macos-mubbo-server</artifactId>
+                <version>${macos.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alishangtian.macos</groupId>
+                <artifactId>macos-mubbo-client</artifactId>
+                <version>${macos.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alishangtian.macos</groupId>
                 <artifactId>macos-spring-boot-starter</artifactId>
                 <version>${macos.version}</version>
             </dependency>

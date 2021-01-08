@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Date 2021/1/3 12:06
  */
 @Configuration
-@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
+@ConditionalOnProperty(name = "mubbo.server.use", havingValue = "true")
 public class MubboConfiguration {
 
     @Bean
@@ -42,14 +42,14 @@ public class MubboConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ClientConfig.class)
-    @ConfigurationProperties(prefix = "mubbo.client")
+    @ConfigurationProperties(prefix = "mubbo.config.client")
     public ClientConfig clientConfig() {
         return new ClientConfig();
     }
 
     @Bean
     @ConditionalOnMissingBean(MubboServerConfig.class)
-    @ConfigurationProperties(prefix = "mubbo.server")
+    @ConfigurationProperties(prefix = "mubbo.config.server")
     public MubboServerConfig mubboServerConfig() {
         return new MubboServerConfig();
     }

@@ -5,6 +5,7 @@ import com.alishangtian.mubbo.client.annotation.MubboConsumer;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.HashSet;
 
 /**
  * @Description ServicePublishComponent
@@ -22,6 +24,7 @@ import java.lang.reflect.Parameter;
  */
 @DependsOn("macosClient")
 @Component
+@ConditionalOnProperty(name = "mubbo.consumer.use", havingValue = "true")
 public class ServiceConsumerComponent implements BeanPostProcessor {
 
     @Autowired
@@ -37,25 +40,15 @@ public class ServiceConsumerComponent implements BeanPostProcessor {
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        MubboConsumer mubboConsumer = bean.getClass().getAnnotation(MubboConsumer.class);
-        String serviceClass = null;
-        if (null != mubboConsumer) {
-            serviceClass = mubboConsumer.value();
-            if (StringUtils.isEmpty(serviceClass)) {
-                serviceClass = bean.getClass().getSimpleName();
-            }
-        }
         Method[] methods = ReflectionUtils.getDeclaredMethods(bean.getClass());
         for (Method method : methods) {
             MubboConsumer methodMubboService = method.getAnnotation(MubboConsumer.class);
-            Parameter[] parameters = method.getParameters();
             if (null != methodMubboService) {
                 String methodServiceName = methodMubboService.value();
                 if (StringUtils.isEmpty(methodServiceName)) {
                     methodServiceName = method.getName();
                 }
-                String serviceName = null == serviceClass ? methodServiceName : serviceClass + "/" + methodServiceName;
-
+                macosClient.subscribeService(methodServiceName);
             }
         }
         return bean;

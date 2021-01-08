@@ -16,10 +16,10 @@ public interface MacosClient {
     /**
      * 向macos集群订阅服务
      *
-     * @param services
+     * @param service
      * @return
      */
-    boolean subscribeService(Set<String> services);
+    boolean subscribeService(String service);
 
     /**
      * 客户端请求远程服务

@@ -1,6 +1,7 @@
 package com.alishangtian.mubbo.server.annotation;
 
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.lang.annotation.*;
 
@@ -13,7 +14,6 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Component
 public @interface MubboService {
     String value() default "";
 }
