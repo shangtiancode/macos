@@ -16,4 +16,9 @@ public class MubboServerService {
     public Integer insert(Integer id) {
         return 0;
     }
+
+    @MubboService("update")
+    public Integer update(Integer id) {
+        return 0;
+    }
 }

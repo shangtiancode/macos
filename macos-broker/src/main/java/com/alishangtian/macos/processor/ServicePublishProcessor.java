@@ -29,7 +29,7 @@ public class ServicePublishProcessor implements NettyRequestProcessor {
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         PublishServiceBody publishServiceBody = JSONUtils.parseObject(request.getLoad(), new TypeReference<PublishServiceBody>() {
         });
-        this.brokerStarter.addPublishChannel(publishServiceBody);
+        this.brokerStarter.addPublishChannel(publishServiceBody, true);
         return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(this.brokerStarter.getKnownHosts()).getBytes()).build();
     }
 

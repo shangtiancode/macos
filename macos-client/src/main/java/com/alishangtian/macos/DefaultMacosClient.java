@@ -85,7 +85,7 @@ public class DefaultMacosClient implements MacosClient {
                     try {
                         connectHost(broker);
                         XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
-                                        code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(service).getBytes(StandardCharsets.UTF_8)).build(),
+                                        code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(subscribeServices).getBytes(StandardCharsets.UTF_8)).build(),
                                 clientConfig.getConnectBrokerTimeout());
                         if (!response.isSuccess()) {
                             log.error("publish service {} error", JSONUtils.toJSONString(service));

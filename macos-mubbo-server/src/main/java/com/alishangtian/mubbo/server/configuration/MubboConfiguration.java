@@ -61,27 +61,8 @@ public class MubboConfiguration {
                 .nettyClientConfig(nettyClientConfig)
                 .nettyServerConfig(nettyServerConfig)
                 .build();
+        mubboServer.start();
         return mubboServer;
     }
-
-    @Bean("macosClient")
-    public DefaultMacosClient macosClient(NettyClientConfig nettyClientConfig, ClientConfig clientConfig) {
-        ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(4, new ThreadFactory() {
-            AtomicInteger nums = new AtomicInteger();
-
-            @Override
-            public Thread newThread(Runnable runnable) {
-                return new Thread(runnable, "macos-client-scheduled-pool-thread-" + nums.getAndIncrement());
-            }
-        });
-        DefaultMacosClient client = DefaultMacosClient.builder()
-                .config(nettyClientConfig)
-                .defaultChannelEventListener(new DefaultChannelEventListener())
-                .clientConfig(clientConfig)
-                .scheduledThreadPoolExecutor(scheduledThreadPoolExecutor)
-                .publicExecutor(null)
-                .build();
-        client.start();
-        return client;
-    }
+    
 }

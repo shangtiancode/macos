@@ -17,7 +17,6 @@ public class MacosController {
      * @param id
      * @return
      */
-    @MubboConsumer("mubboServerService/insert")
     public Integer insertMubboService(Integer id) {
         return 0;
     }

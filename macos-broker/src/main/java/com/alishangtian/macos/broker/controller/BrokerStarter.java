@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -129,6 +131,7 @@ public class BrokerStarter {
         if (brokerConfig.getMode().equals(ModeEnum.CLUSTER.name())) {
             joinCluster();
             scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> pingServer(), 3000L, 3000L, TimeUnit.MILLISECONDS);
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> pingServiceServer(), 3000L, 3000L, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -182,6 +185,23 @@ public class BrokerStarter {
     }
 
     /**
+     * 检查服务发布者是否在线
+     */
+    public void pingServiceServer() {
+        log.info("serviceServer {}",JSONUtils.toJSONString(this.publisherChannels));
+        Set<String> hosts = new HashSet<>();
+        this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> hosts.addAll(stringPublishServiceBodyConcurrentMap.keySet()));
+        hosts.forEach(host -> {
+            try {
+                connectHost(host);
+            } catch (Exception e) {
+                log.error("connect host {} error,", host, e.getMessage(), e);
+                this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(host));
+            }
+        });
+    }
+
+    /**
      * connectHost
      *
      * @param host
@@ -219,7 +239,6 @@ public class BrokerStarter {
      * @param pKnownHosts
      */
     public void mergeKnownHosts(String sourceHost, Set<String> pKnownHosts) {
-        this.knownHosts.addAll(this.clientChannelProcessor.getActiveChannel().keySet());
         log.info("sourceHost:{} -> targetHost:{} , mergeKnownHosts {} to {}", sourceHost, hostAddress, pKnownHosts, this.knownHosts);
         List<String> unKnownHost = pKnownHosts.stream().filter(host -> !knownHosts.contains(host) && !host.equals(hostAddress)).collect(Collectors.toList());
         log.info("sourceHost:{} -> targetHost:{} , unKnownHost {}", sourceHost, hostAddress, unKnownHost);
@@ -236,7 +255,7 @@ public class BrokerStarter {
         try {
             subscriberChannels.values().stream()
                     .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(address))
-                    .collect(Collectors.toList()).get(0).remove(address);
+                    .collect(Collectors.toList()).stream().forEach(stringChannelConcurrentMap -> stringChannelConcurrentMap.remove(address));
         } finally {
             clientChannelLock.unlock();
         }
@@ -278,12 +297,15 @@ public class BrokerStarter {
      *
      * @param publishServiceBody
      */
-    public void addPublishChannel(PublishServiceBody publishServiceBody) {
+    public void addPublishChannel(PublishServiceBody publishServiceBody, boolean spread) {
         serviceChannelLock.lock();
         try {
             ConcurrentMap<String, PublishServiceBody> publishServiceBodyConcurrentMap = publisherChannels.getOrDefault(publishServiceBody.getServiceName(), Maps.newConcurrentMap());
             publishServiceBodyConcurrentMap.put(publishServiceBody.getServerHost(), publishServiceBody);
             publisherChannels.put(publishServiceBody.getServiceName(), publishServiceBodyConcurrentMap);
+            if (spread) {
+                executorService.execute(() -> syncServicePublishInfo(publishServiceBody));
+            }
         } finally {
             serviceChannelLock.unlock();
         }
@@ -297,6 +319,27 @@ public class BrokerStarter {
      */
     public ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> getPublishServiceBodys(Set<String> services) {
         return null;
+    }
+
+    /**
+     * 同步服务发布信息
+     *
+     * @param publishServiceBody
+     */
+    public void syncServicePublishInfo(PublishServiceBody publishServiceBody) {
+        this.knownHosts.forEach(host -> {
+            if (!host.equals(hostAddress)) {
+                try {
+                    connectHost(host);
+                    XtimerCommand response = client.invokeSync(host, XtimerCommand.builder().code(RequestCode.BROKER_SPREAD_PROPOSAL_REQUEST).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
+                    if (!response.isSuccess()) {
+                        log.error("sync service pushlish info to {} result {}", host, response.getResult());
+                    }
+                } catch (Exception e) {
+                    log.error("sync service pushlish info to {} error {}", host, e.getMessage(), e);
+                }
+            }
+        });
     }
 
 }

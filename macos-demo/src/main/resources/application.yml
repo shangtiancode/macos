@@ -1,26 +1,38 @@
 spring:
   application:
-    name: xtimer-demo
+    name: macos-demo
 server:
   port: 8888
   random: 3600
-macos:
+mubbo:
+  server:
+    use: true
   config:
-    registers: 58.87.80.94:6379,58.87.80.94:6380,140.143.184.197:6379,140.143.184.197:6380,129.204.169.119:6379,129.204.169.119:6380
-    timeout: 5000
-    groupKey: demo
-    appKey: demo
-    clusterName: xtimer_tcc
-    askLeaderAndHeartBeatToFollowerInterval: 3000
-    clientEnabled: true
+    client:
+      macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
+    server:
+      host: 127.0.0.1
+      macosNodes: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
+netty:
+  server:
+    listenPort: 9000
+    serverWorkerThreads: 8
+    serverCallbackExecutorThreads: 0
+    serverSelectorThreads: 3
+    serverOnewaySemaphoreValue: 256
+    serverAsyncSemaphoreValue: 64
+    serverChannelMaxIdleTimeSeconds: 30
+    serverSocketSndBufSize: 65535
+    serverSocketRcvBufSize: 65535
+    serverPooledByteBufAllocatorEnable: true
+    useEpollNativeSelector: false
   client:
     clientWorkerThreads: 4
-    clientCallbackExecutorThreads: 8
     clientOnewaySemaphoreValue: 65535
     clientAsyncSemaphoreValue: 65535
     connectTimeoutMillis: 3000
     channelNotActiveInterval: 60000
-    clientChannelMaxIdleTimeSeconds: 120
+    clientChannelMaxIdleTimeSeconds: 30
     clientSocketSndBufSize: 65535
     clientSocketRcvBufSize: 65535
     clientPooledByteBufAllocatorEnable: true

@@ -16,9 +16,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ClientConfig {
     private String macosBrokers;
-    private int timeout;
-    private String groupKey;
-    private String appKey;
     private long connectBrokerTimeout = 5000L;
     private long publisherHeartBeatTimeInterval = 5000L;
     private long subscriberHeartBeatTimeInterval = 5000L;

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
     <properties>
-        <Property name="PRO_NAME">xtimer-demo</Property>
-        <Property name="LOG_HOME">/home/work/log/${PRO_NAME}</Property>
+        <Property name="PRO_NAME">macos-demo</Property>
+        <Property name="LOG_HOME">/Users/A007/logs/${PRO_NAME}</Property>
         <Property name="LOG_PATTERN">[%-5level] %date{yyyy-MM-dd HH:mm:ss.SSS} [%t]%x [%c{1.}.%M()] [%message]%n</Property>
 
         <!--加上日志路径信息的一秒能打印10000条[%location],去掉的话一秒能打印30000条,但是10000条每秒也完成够业务使用了 -->

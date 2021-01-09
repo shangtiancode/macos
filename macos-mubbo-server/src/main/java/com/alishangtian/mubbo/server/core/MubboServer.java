@@ -83,7 +83,7 @@ public class MubboServer {
 
         @Override
         public Thread newThread(Runnable r) {
-            return new Thread(r, "broker-processor-pool-thread-" + num.getAndIncrement());
+            return new Thread(r, "mubboserver-processor-pool-thread-" + num.getAndIncrement());
         }
     });
     /**
@@ -94,6 +94,7 @@ public class MubboServer {
     /**
      * 客户端发布列表 <服务名称,服务详细信息>
      */
+    @lombok.Builder.Default
     private ConcurrentMap<String, PublishServiceBody> publisherChannels = Maps.newConcurrentMap();
 
     /**
