@@ -1,6 +1,8 @@
 package com.alishangtian.mubbo.server.core;
 
-import com.alishangtian.mubbo.server.annotation.MubboService;
+import com.alishangtian.macos.DefaultMacosClient;
+import com.alishangtian.mubbo.server.annotation.MubboConsumer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -12,7 +14,6 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 
 /**
  * @Description ServicePublishComponent
@@ -20,13 +21,15 @@ import java.lang.reflect.Parameter;
  * @Author alishangtian
  * @Date 2021/1/3 12:02
  */
-@DependsOn("mubboServer")
+@DependsOn("macosClient")
 @Component
-@ConditionalOnProperty(name = "mubbo.server.use", havingValue = "true")
-public class ServicePublishComponent implements BeanPostProcessor {
+@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
+@Slf4j
+public class ServiceConsumerComponent implements BeanPostProcessor {
 
     @Autowired
-    private MubboServer mubboServer;
+    private DefaultMacosClient macosClient;
+
     @Autowired
     private ApplicationContext applicationContext;
 
@@ -37,25 +40,16 @@ public class ServicePublishComponent implements BeanPostProcessor {
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        MubboService classMubboService = bean.getClass().getAnnotation(MubboService.class);
-        String serviceClass = null;
-        if (null != classMubboService) {
-            serviceClass = classMubboService.value();
-            if (StringUtils.isEmpty(serviceClass)) {
-                serviceClass = bean.getClass().getSimpleName();
-            }
-        }
-        Method[] methods = ReflectionUtils.getDeclaredMethods(bean.getClass());
+        log.info("ServiceConsumerComponent.postProcessAfterInitialization beanName {}", beanName);
+        Method[] methods = ReflectionUtils.getAllDeclaredMethods(bean.getClass());
         for (Method method : methods) {
-            MubboService methodMubboService = method.getAnnotation(MubboService.class);
+            MubboConsumer methodMubboService = method.getAnnotation(MubboConsumer.class);
             if (null != methodMubboService) {
-                Parameter[] parameters = method.getParameters();
                 String methodServiceName = methodMubboService.value();
                 if (StringUtils.isEmpty(methodServiceName)) {
                     methodServiceName = method.getName();
                 }
-                String serviceName = null == serviceClass ? methodServiceName : serviceClass + "/" + methodServiceName;
-                mubboServer.publishService(serviceName, bean, beanName, parameters);
+                macosClient.subscribeService(methodServiceName);
             }
         }
         return bean;

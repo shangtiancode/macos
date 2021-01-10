@@ -5,8 +5,7 @@ server:
   port: 8888
   random: 3600
 mubbo:
-  server:
-    use: true
+  use: true
   config:
     client:
       macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002

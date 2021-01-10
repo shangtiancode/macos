@@ -188,7 +188,8 @@ public class BrokerStarter {
      * 检查服务发布者是否在线
      */
     public void pingServiceServer() {
-        log.info("serviceServer {}",JSONUtils.toJSONString(this.publisherChannels));
+        log.info("subscriber {}", JSONUtils.toJSONString(this.subscriberChannels));
+        log.info("publisher {}", JSONUtils.toJSONString(this.publisherChannels));
         Set<String> hosts = new HashSet<>();
         this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> hosts.addAll(stringPublishServiceBodyConcurrentMap.keySet()));
         hosts.forEach(host -> {

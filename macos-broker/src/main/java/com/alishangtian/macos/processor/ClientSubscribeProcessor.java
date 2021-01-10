@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.log4j.Log4j2;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -33,7 +34,8 @@ public class ClientSubscribeProcessor implements NettyRequestProcessor {
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> subscribeServices = this.brokerStarter.addSubscribeChannel(JSONUtils.parseObject(request.getLoad(), new TypeReference<Set<String>>() {
         }), XtimerHelper.parseChannelRemoteAddr(ctx.channel()), ctx.channel());
-        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(subscribeServices).getBytes()).build();
+        log.info("ClientSubscribeProcessor result subscribeServices{}",JSONUtils.toJSONString(subscribeServices));
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(subscribeServices).getBytes(StandardCharsets.UTF_8)).build();
     }
 
     @Override

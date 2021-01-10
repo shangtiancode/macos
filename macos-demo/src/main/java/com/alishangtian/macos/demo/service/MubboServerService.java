@@ -1,6 +1,7 @@
 package com.alishangtian.macos.demo.service;
 
 import com.alishangtian.mubbo.server.annotation.MubboService;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 /**
@@ -10,15 +11,18 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @MubboService("mubboServerService")
+@Log4j2
 public class MubboServerService {
 
     @MubboService("insert")
     public Integer insert(Integer id) {
-        return 0;
+        log.info("mubboServerService/insert service invoked , parameter is {}", id);
+        return id * 10;
     }
 
     @MubboService("update")
     public Integer update(Integer id) {
-        return 0;
+        log.info("mubboServerService/update service invoked , parameter is {}", id);
+        return id * 20;
     }
 }

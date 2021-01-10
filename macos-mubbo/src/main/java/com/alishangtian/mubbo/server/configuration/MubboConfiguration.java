@@ -1,9 +1,11 @@
-package com.alishangtian.mubbo.client.configuration;
+package com.alishangtian.mubbo.server.configuration;
 
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
+import com.alishangtian.mubbo.server.core.MubboServer;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
+import com.alishangtian.macos.remoting.config.NettyServerConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -21,8 +23,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Date 2021/1/3 12:06
  */
 @Configuration
-@ConditionalOnProperty(name = "mubbo.consumer.use", havingValue = "true")
+@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
 public class MubboConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(NettyServerConfig.class)
+    @ConfigurationProperties(prefix = "netty.server")
+    public NettyServerConfig nettyServerConfig() {
+        return new NettyServerConfig();
+    }
 
     @Bean
     @ConditionalOnMissingBean(NettyClientConfig.class)
@@ -33,9 +42,27 @@ public class MubboConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ClientConfig.class)
-    @ConfigurationProperties(prefix = "mubbo.client")
+    @ConfigurationProperties(prefix = "mubbo.config.client")
     public ClientConfig clientConfig() {
         return new ClientConfig();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(MubboServerConfig.class)
+    @ConfigurationProperties(prefix = "mubbo.config.server")
+    public MubboServerConfig mubboServerConfig() {
+        return new MubboServerConfig();
+    }
+
+    @Bean("mubboServer")
+    public MubboServer mubboServer(NettyServerConfig nettyServerConfig, MubboServerConfig mubboServerConfig, NettyClientConfig nettyClientConfig) {
+        MubboServer mubboServer = MubboServer.builder()
+                .mubboServerConfig(mubboServerConfig)
+                .nettyClientConfig(nettyClientConfig)
+                .nettyServerConfig(nettyServerConfig)
+                .build();
+        mubboServer.start();
+        return mubboServer;
     }
 
     @Bean("macosClient")
@@ -58,4 +85,5 @@ public class MubboConfiguration {
         client.start();
         return client;
     }
+
 }

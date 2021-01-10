@@ -17,8 +17,7 @@
         <module>macos-client</module>
         <module>macos-demo</module>
         <module>macos-model</module>
-        <module>macos-mubbo-server</module>
-        <module>macos-mubbo-client</module>
+        <module>macos-mubbo</module>
     </modules>
 
     <parent>
@@ -112,13 +111,8 @@
                 <version>${macos.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-mubbo-server</artifactId>
-                <version>${macos.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-mubbo-client</artifactId>
+                <groupId>com.alishangtian.mubbo</groupId>
+                <artifactId>macos-mubbo</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>

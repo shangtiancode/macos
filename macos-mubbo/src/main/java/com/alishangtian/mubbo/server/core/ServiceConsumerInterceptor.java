@@ -1,8 +1,8 @@
-package com.alishangtian.mubbo.client.core;
+package com.alishangtian.mubbo.server.core;
 
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.common.util.JSONUtils;
-import com.alishangtian.mubbo.client.annotation.MubboConsumer;
+import com.alishangtian.mubbo.server.annotation.MubboConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -21,7 +21,7 @@ import java.util.Arrays;
  * @author maoxiaobing
  * @time 2020-11-17
  */
-@ConditionalOnProperty(name = "mubbo.consumer.use", havingValue = "true")
+@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
 @Aspect
 @Component
 @Slf4j
@@ -30,7 +30,7 @@ public class ServiceConsumerInterceptor {
     @Autowired
     private DefaultMacosClient macosClient;
 
-    @Pointcut("@annotation(com.alishangtian.mubbo.client.annotation.MubboConsumer)")
+    @Pointcut("@annotation(com.alishangtian.mubbo.server.annotation.MubboConsumer)")
     public void consume() {
     }
 

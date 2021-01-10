@@ -61,14 +61,17 @@ public class DefaultMacosClient implements MacosClient {
     /**
      * 客户端订阅服务列表
      */
+    @lombok.Builder.Default
     private ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> subscribeServicesWrapper = Maps.newConcurrentMap();
     /**
      * 订阅服务列表
      */
+    @lombok.Builder.Default
     private Set<String> subscribeServices = new HashSet<>();
     /**
      * 标识一下定时任务是否开启
      */
+    @lombok.Builder.Default
     private final AtomicBoolean schedulerStarted = new AtomicBoolean(false);
 
     @Override
@@ -81,6 +84,7 @@ public class DefaultMacosClient implements MacosClient {
         subscribeServices.add(service);
         if (schedulerStarted.compareAndSet(false, true)) {
             scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+                log.info("subscribeServices {}",JSONUtils.toJSONString(subscribeServices));
                 for (String broker : brokers) {
                     try {
                         connectHost(broker);
@@ -92,6 +96,8 @@ public class DefaultMacosClient implements MacosClient {
                         }
                         this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
                         });
+                        log.info("subscribeServicesWrapper {}", JSONUtils.toJSONString(subscribeServicesWrapper));
+                        break;
                     } catch (Exception e) {
                         log.error("connect broker {} error {}", broker, e.getMessage(), e);
                     }
@@ -142,7 +148,7 @@ public class DefaultMacosClient implements MacosClient {
                 connectHost(broker);
                 XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().code(RequestCode.GET_BROKER_LIST_REQUEST).build(), clientConfig.getConnectBrokerTimeout());
                 if (response.isSuccess()) {
-                    Set<String> brokerSet = JSONUtils.parseObject(String.valueOf(response.getLoad()), new TypeReference<Set<String>>() {
+                    Set<String> brokerSet = JSONUtils.parseObject(response.getLoad(), new TypeReference<Set<String>>() {
                     });
                     if (null != brokerSet && !brokerSet.isEmpty()) {
                         this.brokers = brokerSet;

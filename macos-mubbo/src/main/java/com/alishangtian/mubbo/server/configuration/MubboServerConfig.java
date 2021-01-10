@@ -1,6 +1,5 @@
 package com.alishangtian.mubbo.server.configuration;
 
-import lombok.Builder;
 import lombok.Data;
 
 /**
