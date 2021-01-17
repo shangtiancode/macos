@@ -110,6 +110,7 @@ public class DefaultMacosClient implements MacosClient {
     @Override
     public byte[] invokeService(String service, List<Object> parameters) {
         PublishServiceBody publishServiceBody = getServiceProviderWithLoadBalance(service);
+        log.info("invokeService {} load host is {}", service, publishServiceBody.getServerHost());
         try {
             connectHost(publishServiceBody.getServerHost());
             XtimerCommand response = this.client.invokeSync(publishServiceBody.getServerHost(), XtimerCommand.builder().code(RequestCode.CLIENT_INVOKE_SERVICE_TO_SERVER).load(JSONUtils.toJSONString(InvokeServiceBody.builder().serviceName(service).parameterValues(parameters).build()).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
