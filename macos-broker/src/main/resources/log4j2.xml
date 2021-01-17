@@ -2,7 +2,7 @@
 <configuration>
     <properties>
         <Property name="PRO_NAME">macos</Property>
-        <Property name="LOG_HOME">/Users/A007/logs/${PRO_NAME}</Property>
+        <Property name="LOG_HOME">logs/${PRO_NAME}</Property>
         <Property name="LOG_PATTERN">[%-5level] %date{yyyy-MM-dd HH:mm:ss.SSS} [%t]%x [%c{1.}.%M()] [%message]%n
         </Property>
 
