@@ -1,14 +1,10 @@
 package com.alishangtian.macos.broker.config;
 
-import com.alishangtian.macos.common.redis.JedisPoolFactory;
-import com.alishangtian.macos.core.config.ScannerConfig;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.config.NettyServerConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
-import redis.clients.jedis.JedisCluster;
 
 /**
  * @Description ServerConfiguration

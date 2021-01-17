@@ -1,8 +1,8 @@
-package com.alishangtian.mubbo.server.core;
+package com.alishangtian.mubbo.comsumer;
 
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.common.util.JSONUtils;
-import com.alishangtian.mubbo.server.annotation.MubboConsumer;
+import com.alishangtian.mubbo.comsumer.annotation.MubboConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -21,10 +21,10 @@ import java.util.Arrays;
  * @author maoxiaobing
  * @time 2020-11-17
  */
-@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
-@Aspect
-@Component
 @Slf4j
+//@Aspect
+//@Component
+//@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
 public class ServiceConsumerInterceptor {
 
     @Autowired
@@ -36,11 +36,12 @@ public class ServiceConsumerInterceptor {
 
     @Around("consume()")
     public Object around(JoinPoint joinPoint) {
+        log.info("ServiceConsumerInterceptor invoke");
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         try {
             Method method = joinPoint.getTarget().getClass().getDeclaredMethod(methodSignature.getName(), methodSignature.getParameterTypes());
-            MubboConsumer mubboConsumer = method.getAnnotation(MubboConsumer.class);
-            String service = mubboConsumer.value();
+            MubboConsumer mubboClient = method.getAnnotation(MubboConsumer.class);
+            String service = mubboClient.value();
             if (StringUtils.isEmpty(service)) {
                 service = methodSignature.getName();
             }

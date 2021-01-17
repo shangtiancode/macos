@@ -1,4 +1,4 @@
-package com.alishangtian.mubbo.server.configuration;
+package com.alishangtian.mubbo.configuration;
 
 import lombok.Data;
 

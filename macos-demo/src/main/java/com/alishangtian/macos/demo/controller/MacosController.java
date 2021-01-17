@@ -1,7 +1,8 @@
 package com.alishangtian.macos.demo.controller;
 
-import com.alishangtian.mubbo.server.annotation.MubboConsumer;
+import com.alishangtian.macos.demo.service.MubboConsumerService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,23 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Slf4j
 public class MacosController {
-    /**
-     * @param id
-     * @return
-     */
-    @MubboConsumer("mubboServerService/insert")
-    public Integer insertMubboService(Integer id) {
-        return 0;
-    }
 
-    /**
-     * @param id
-     * @return
-     */
-    @MubboConsumer("mubboServerService/update")
-    public Integer updateMubboService(Integer id) {
-        return 0;
-    }
+    @Autowired
+    private MubboConsumerService mubboConsumerService;
 
     /**
      * 插入数据
@@ -42,7 +29,8 @@ public class MacosController {
     @GetMapping("/insert")
     public Integer insert(@RequestParam Integer id) {
         log.info("insert data {}", id);
-        return insertMubboService(id);
+        Integer result = mubboConsumerService.insertMubboService(id);
+        return result;
     }
 
     /**
@@ -54,6 +42,7 @@ public class MacosController {
     @GetMapping("/update")
     public Integer update(@RequestParam Integer id) {
         log.info("update data {}", id);
-        return updateMubboService(id);
+        Integer result = mubboConsumerService.updateMubboService(id);
+        return result;
     }
 }

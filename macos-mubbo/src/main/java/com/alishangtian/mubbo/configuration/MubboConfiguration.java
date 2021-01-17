@@ -1,11 +1,11 @@
-package com.alishangtian.mubbo.server.configuration;
+package com.alishangtian.mubbo.configuration;
 
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
-import com.alishangtian.mubbo.server.core.MubboServer;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.config.NettyServerConfig;
+import com.alishangtian.mubbo.server.MubboServer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;

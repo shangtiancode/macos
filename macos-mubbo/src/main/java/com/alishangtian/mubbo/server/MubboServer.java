@@ -1,14 +1,9 @@
-package com.alishangtian.mubbo.server.core;
+package com.alishangtian.mubbo.server;
 
 import com.alishangtian.macos.common.protocol.InvokeServiceBody;
 import com.alishangtian.macos.common.protocol.PublishServiceBody;
 import com.alishangtian.macos.common.protocol.RequestCode;
 import com.alishangtian.macos.common.util.JSONUtils;
-import com.alishangtian.mubbo.server.configuration.MubboServerConfig;
-import com.alishangtian.mubbo.server.processor.ClientChannelProcessor;
-import com.alishangtian.mubbo.server.processor.ClientSubscribeProcessor;
-import com.alishangtian.mubbo.server.processor.MubboServerChannelProcessor;
-import com.alishangtian.mubbo.server.processor.ServiceInvokeProcessor;
 import com.alishangtian.macos.remoting.ConnectFuture;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
@@ -16,20 +11,23 @@ import com.alishangtian.macos.remoting.config.NettyServerConfig;
 import com.alishangtian.macos.remoting.exception.RemotingConnectException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.alishangtian.macos.remoting.netty.NettyRemotingServer;
+import com.alishangtian.mubbo.configuration.MubboServerConfig;
+import com.alishangtian.mubbo.server.processor.ClientChannelProcessor;
+import com.alishangtian.mubbo.server.processor.ClientSubscribeProcessor;
+import com.alishangtian.mubbo.server.processor.MubboServerChannelProcessor;
+import com.alishangtian.mubbo.server.processor.ServiceInvokeProcessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 import io.netty.channel.Channel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -70,14 +68,14 @@ public class MubboServer {
     /**
      * 客户端订阅列表
      */
-    @lombok.Builder.Default
+    @Builder.Default
     private ConcurrentMap<String, ConcurrentMap<String, Channel>> subscriberChannels = Maps.newConcurrentMap();
     /**
      * 订阅客户端操作lock
      */
-    @lombok.Builder.Default
+    @Builder.Default
     private ReentrantLock clientChannelLock = new ReentrantLock();
-    @lombok.Builder.Default
+    @Builder.Default
     private ExecutorService executorService = new ThreadPoolExecutor(CORE_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : CORE_SIZE, MAX_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : MAX_SIZE, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
         AtomicLong num = new AtomicLong();
 
@@ -94,7 +92,7 @@ public class MubboServer {
     /**
      * 客户端发布列表 <服务名称,服务详细信息>
      */
-    @lombok.Builder.Default
+    @Builder.Default
     private ConcurrentMap<String, PublishServiceBody> publisherChannels = Maps.newConcurrentMap();
 
     /**
@@ -233,14 +231,24 @@ public class MubboServer {
         if (serviceName.contains("/")) {
             serviceName = StringUtils.split(serviceName, "/")[1];
         }
-        Method method = ReflectionUtils.findMethod(publishServiceBody.getBean().getClass(), serviceName);
-        if (null != method) {
-            try {
-                Object result = method.invoke(publishServiceBody.getBean(), Arrays.asList(invokeServiceBody.getParameterValues()));
-                return JSONUtils.toJSONString(result).getBytes(StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                log.error("invoke service {} error , parameters {}", serviceName, invokeServiceBody.getParameterValues(), e);
+        if (null == publishServiceBody.getMethodCache()) {
+            Class clazz = publishServiceBody.getBean().getClass();
+            Method[] methods = clazz.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.getName().equals(serviceName) && method.getParameterCount() == invokeServiceBody.getParameterValues().size()) {
+                    publishServiceBody.setMethodCache(method);
+                }
             }
+        }
+        try {
+            Object[] params = new Object[invokeServiceBody.getParameterValues().size()];
+            for (int i = 0; i < publishServiceBody.getParameters().size(); i++) {
+                params[i] = Class.forName(publishServiceBody.getParameters().get(i)).cast(invokeServiceBody.getParameterValues().get(i));
+            }
+            Object result = publishServiceBody.getMethodCache().invoke(publishServiceBody.getBean(), params);
+            return JSONUtils.toJSONString(result).getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.error("invoke service {} error , parameters {}", serviceName, invokeServiceBody.getParameterValues(), e);
         }
         return new byte[0];
     }

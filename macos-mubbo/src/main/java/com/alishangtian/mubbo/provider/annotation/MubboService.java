@@ -1,7 +1,4 @@
-package com.alishangtian.mubbo.server.annotation;
-
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+package com.alishangtian.mubbo.provider.annotation;
 
 import java.lang.annotation.*;
 
@@ -11,7 +8,7 @@ import java.lang.annotation.*;
  * @Author alishangtian
  * @Date 2021/1/2 21:41
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface MubboService {

@@ -72,7 +72,7 @@ public class DefaultMacosClient implements MacosClient {
      * 标识一下定时任务是否开启
      */
     @lombok.Builder.Default
-    private final AtomicBoolean schedulerStarted = new AtomicBoolean(false);
+    private final AtomicBoolean subcriberStarted = new AtomicBoolean(false);
 
     @Override
     public void start() {
@@ -82,9 +82,9 @@ public class DefaultMacosClient implements MacosClient {
     @Override
     public boolean subscribeService(String service) {
         subscribeServices.add(service);
-        if (schedulerStarted.compareAndSet(false, true)) {
+        if (subcriberStarted.compareAndSet(false, true)) {
             scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-                log.info("subscribeServices {}",JSONUtils.toJSONString(subscribeServices));
+                log.info("subscribeServices {}", JSONUtils.toJSONString(subscribeServices));
                 for (String broker : brokers) {
                     try {
                         connectHost(broker);
@@ -92,7 +92,7 @@ public class DefaultMacosClient implements MacosClient {
                                         code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(subscribeServices).getBytes(StandardCharsets.UTF_8)).build(),
                                 clientConfig.getConnectBrokerTimeout());
                         if (!response.isSuccess()) {
-                            log.error("publish service {} error", JSONUtils.toJSONString(service));
+                            log.error("subscribe service {} error", JSONUtils.toJSONString(service));
                         }
                         this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
                         });
@@ -112,11 +112,13 @@ public class DefaultMacosClient implements MacosClient {
         PublishServiceBody publishServiceBody = getServiceProviderWithLoadBalance(service);
         try {
             connectHost(publishServiceBody.getServerHost());
-            XtimerCommand response = this.client.invokeSync(publishServiceBody.getServerHost(), XtimerCommand.builder().load(JSONUtils.toJSONString(InvokeServiceBody.builder().serviceName(service).parameterValues(parameters).build()).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
+            XtimerCommand response = this.client.invokeSync(publishServiceBody.getServerHost(), XtimerCommand.builder().code(RequestCode.CLIENT_INVOKE_SERVICE_TO_SERVER).load(JSONUtils.toJSONString(InvokeServiceBody.builder().serviceName(service).parameterValues(parameters).build()).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
             return response.getLoad();
         } catch (InterruptedException e) {
             log.error("invoke service {} error", service, e);
         } catch (RemotingException e) {
+            log.error("invoke service {} error", service, e);
+        } catch (Exception e) {
             log.error("invoke service {} error", service, e);
         }
         return new byte[0];

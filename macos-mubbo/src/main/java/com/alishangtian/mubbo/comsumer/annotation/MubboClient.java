@@ -1,6 +1,4 @@
-package com.alishangtian.mubbo.server.annotation;
-
-import org.springframework.stereotype.Component;
+package com.alishangtian.mubbo.comsumer.annotation;
 
 import java.lang.annotation.*;
 
@@ -10,9 +8,9 @@ import java.lang.annotation.*;
  * @Date 2021/1/2 21:47
  * @Version 0.0.1
  */
-@Target({ElementType.METHOD})
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Component
-public @interface MubboConsumer {
+@Documented
+public @interface MubboClient {
     String value() default "";
 }

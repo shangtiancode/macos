@@ -22,7 +22,7 @@
 
         <RollingRandomAccessFile name="info"
                                  fileName="${LOG_HOME}/${PRO_NAME}.info.log"
-                                 filePattern="${LOG_HOME}/${PRO_NAME}.%d{yyyyMMddHH}.log.gz"
+                                 filePattern="${LOG_HOME}/${PRO_NAME}.%d{yyyyMMddHH}.info.log.gz"
                                  immediateFlush="true" append="true">
             <PatternLayout>
                 <Pattern>${LOG_PATTERN}</Pattern>
@@ -31,6 +31,30 @@
             <Filters>
                 <!--只打warn,error级别的日志-->
                 <ThresholdFilter level="info" onMatch="ACCEPT"/>
+            </Filters>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="${LOG_HOME}">
+                    <IfFileName glob="*.log.gz"/>
+                    <IfLastModified age="12H"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="debug"
+                                 fileName="${LOG_HOME}/${PRO_NAME}.debug.log"
+                                 filePattern="${LOG_HOME}/${PRO_NAME}.%d{yyyyMMddHH}.debug.log.gz"
+                                 immediateFlush="true" append="true">
+            <PatternLayout>
+                <Pattern>${LOG_PATTERN}</Pattern>
+            </PatternLayout>
+
+            <Filters>
+                <!--只打warn,error级别的日志-->
+                <ThresholdFilter level="debug" onMatch="ACCEPT"/>
             </Filters>
 
             <Policies>
@@ -69,6 +93,7 @@
 
     <loggers>
         <Root level="info" includeLocation="true">
+            <AppenderRef ref="debug"/>
             <AppenderRef ref="info"/>
             <AppenderRef ref="error"/>
             <AppenderRef ref="console"/>

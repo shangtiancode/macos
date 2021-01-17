@@ -12,7 +12,6 @@
         <module>macos-common</module>
         <module>macos-broker</module>
         <module>macos-remoting</module>
-        <module>macos-core</module>
         <module>macos-spring-boot-starter</module>
         <module>macos-client</module>
         <module>macos-demo</module>

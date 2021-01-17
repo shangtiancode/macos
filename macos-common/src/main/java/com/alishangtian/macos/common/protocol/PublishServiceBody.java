@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -43,4 +44,9 @@ public class PublishServiceBody implements Serializable {
      */
     @JsonIgnore
     private Object beanName;
+    /**
+     * 回调用method缓存
+     */
+    @JsonIgnore
+    private Method methodCache;
 }
