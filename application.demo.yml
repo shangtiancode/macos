@@ -1,31 +1,39 @@
 spring:
   application:
-    name: xtimer-demo
+    name: macos-demo
 server:
   port: 8888
-  random:
-    origin: 5000
-    bound: 1800000
-xtimer:
+  random: 3600
+mubbo:
+  use: true
   config:
-    registers: 10.46.27.8:6379,10.46.27.8:6380,10.46.5.145:6379,10.46.5.145:6380,10.46.14.4:6379,10.46.14.4:6380
-    timeout: 5000
-    groupKey: ocean
-    appKey: ocean
-    clusterName: xtimer_xmo
-    askLeaderAndHeartBeatToFollowerInterval: 3000
-    clientEnabled: true
+    client:
+      macosBrokers: 140.143.184.197:10000,58.87.80.94:10000,129.204.169.119:10000
+    server:
+      host: 58.87.80.94
+      macosNodes: 140.143.184.197:10000,58.87.80.94:10000,129.204.169.119:10000
+netty:
+  server:
+    listenPort: 9000
+    serverWorkerThreads: 8
+    serverCallbackExecutorThreads: 0
+    serverSelectorThreads: 3
+    serverOnewaySemaphoreValue: 256
+    serverAsyncSemaphoreValue: 64
+    serverChannelMaxIdleTimeSeconds: 30
+    serverSocketSndBufSize: 65535
+    serverSocketRcvBufSize: 65535
+    serverPooledByteBufAllocatorEnable: true
+    useEpollNativeSelector: false
   client:
-    clientWorkerThreads: 8
-    clientCallbackExecutorThreads: 8
+    clientWorkerThreads: 4
     clientOnewaySemaphoreValue: 65535
     clientAsyncSemaphoreValue: 65535
     connectTimeoutMillis: 3000
     channelNotActiveInterval: 60000
-    clientChannelMaxIdleTimeSeconds: 120
+    clientChannelMaxIdleTimeSeconds: 30
     clientSocketSndBufSize: 65535
     clientSocketRcvBufSize: 65535
     clientPooledByteBufAllocatorEnable: true
     clientCloseSocketIfTimeout: true
     useTLS: false
-  
