@@ -75,7 +75,7 @@ public class BrokerStarter {
     /**
      * 知道的集群节点列表[127.0.0.1:10000,127.0.0.1:10001]
      */
-    private Set<String> knownHosts = new CopyOnWriteArraySet();
+    private CopyOnWriteArraySet<String> knownHosts = new CopyOnWriteArraySet();
     /**
      * 客户端订阅列表
      */
@@ -94,21 +94,21 @@ public class BrokerStarter {
      */
     private ReentrantLock serviceChannelLock = new ReentrantLock();
 
-    private ExecutorService executorService = new ThreadPoolExecutor(CORE_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : CORE_SIZE, MAX_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : MAX_SIZE, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
-        AtomicLong num = new AtomicLong();
+    private ExecutorService executorService = new ThreadPoolExecutor(Math.max(CORE_SIZE, MIN_WORKER_THREAD_COUNT), Math.max(MAX_SIZE, MIN_WORKER_THREAD_COUNT), 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
+        final AtomicLong num = new AtomicLong();
 
         @Override
         public Thread newThread(Runnable r) {
-            return new Thread(r, "broker-processor-pool-thread-" + num.getAndIncrement());
+            return new Thread(r, "macos-processor-pool-thread-" + num.getAndIncrement());
         }
     });
 
-    private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(CORE_SIZE < MIN_SCHEDULE_WORKER_THREAD_COUNT ? MIN_SCHEDULE_WORKER_THREAD_COUNT : CORE_SIZE, new ThreadFactory() {
+    private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(Math.max(CORE_SIZE, MIN_SCHEDULE_WORKER_THREAD_COUNT), new ThreadFactory() {
         AtomicLong num = new AtomicLong();
 
         @Override
         public Thread newThread(Runnable r) {
-            return new Thread(r, "borker-schedule-pool-thread-" + num.getAndIncrement());
+            return new Thread(r, "macos-schedule-pool-thread-" + num.getAndIncrement());
         }
     });
 
@@ -130,8 +130,8 @@ public class BrokerStarter {
         client.start();
         if (brokerConfig.getMode().equals(ModeEnum.CLUSTER.name())) {
             joinCluster();
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> pingServer(), 3000L, 3000L, TimeUnit.MILLISECONDS);
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> pingServiceServer(), 3000L, 3000L, TimeUnit.MILLISECONDS);
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::pingServer, 3000L, 3000L, TimeUnit.MILLISECONDS);
+            scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::pingServiceServer, 3000L, 3000L, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -206,8 +206,7 @@ public class BrokerStarter {
      * connectHost
      *
      * @param host
-     * @throws InterruptedException
-     * @throws RemotingConnectException
+     * @throws InterruptedException,RemotingConnectException
      */
     public void connectHost(final String host) throws InterruptedException, RemotingConnectException {
         if (isConnected(host)) {
@@ -334,6 +333,7 @@ public class BrokerStarter {
                     connectHost(host);
                     XtimerCommand response = client.invokeSync(host, XtimerCommand.builder().code(RequestCode.BROKER_SPREAD_PROPOSAL_REQUEST).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
                     if (!response.isSuccess()) {
+                        //TODO 重试
                         log.error("sync service pushlish info to {} result {}", host, response.getResult());
                     }
                 } catch (Exception e) {

@@ -3,16 +3,8 @@ spring:
     name: macos
 macos:
   broker:
-    clustername: lol
     mode: CLUSTER
     host: 127.0.0.1
-    leaderFailThreshold: 5
-    joinClusterFailThreshold: 15
-    timeoutThreshold: 8000
-    heartbeatInterval: 2000
-    keepLeadingInterval: 2000
-    checkFollowerInterval: 2000
-    partitionCount: 16
     clusterNodes: 127.0.0.1:10001,127.0.0.1:10002
   server:
     listenPort: 10000
@@ -26,7 +18,6 @@ macos:
     serverSocketRcvBufSize: 65535
     serverPooledByteBufAllocatorEnable: true
     useEpollNativeSelector: false
-  # client for communicating with other brokers
   client:
     clientWorkerThreads: 4
     clientOnewaySemaphoreValue: 65535

@@ -21,10 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -67,7 +64,7 @@ public class DefaultMacosClient implements MacosClient {
      * 订阅服务列表
      */
     @lombok.Builder.Default
-    private Set<String> subscribeServices = new HashSet<>();
+    private Set<String> subscribeServices = new CopyOnWriteArraySet<>();
     /**
      * 标识一下定时任务是否开启
      */
@@ -96,8 +93,7 @@ public class DefaultMacosClient implements MacosClient {
                         }
                         this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
                         });
-                        log.info("subscribeServicesWrapper {}", JSONUtils.toJSONString(subscribeServicesWrapper));
-                        break;
+                        log.info("subscribeServicesWrapper from broker {} {}", broker, JSONUtils.toJSONString(subscribeServicesWrapper));
                     } catch (Exception e) {
                         log.error("connect broker {} error {}", broker, e.getMessage(), e);
                     }
