@@ -29,10 +29,13 @@ import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * @Description mubbo server
@@ -76,12 +79,21 @@ public class MubboServer {
     @Builder.Default
     private ReentrantLock clientChannelLock = new ReentrantLock();
     @Builder.Default
-    private ExecutorService executorService = new ThreadPoolExecutor(CORE_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : CORE_SIZE, MAX_SIZE < MIN_WORKER_THREAD_COUNT ? MIN_WORKER_THREAD_COUNT : MAX_SIZE, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
+    private ExecutorService executorService = new ThreadPoolExecutor(Math.max(CORE_SIZE, MIN_WORKER_THREAD_COUNT), Math.max(MAX_SIZE, MIN_WORKER_THREAD_COUNT), 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
         AtomicLong num = new AtomicLong();
 
         @Override
         public Thread newThread(Runnable r) {
             return new Thread(r, "mubboserver-processor-pool-thread-" + num.getAndIncrement());
+        }
+    });
+    @Builder.Default
+    ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(Math.max(PROCESSORS / 2, 1), new ThreadFactory() {
+        AtomicInteger nums = new AtomicInteger();
+
+        @Override
+        public Thread newThread(Runnable runnable) {
+            return new Thread(runnable, "mubboserver-scheduled-pool-thread-" + nums.getAndIncrement());
         }
     });
     /**
@@ -111,6 +123,7 @@ public class MubboServer {
         server.start();
         client = new NettyRemotingClient(nettyClientConfig, clientChannelProcessor = new ClientChannelProcessor(this));
         client.start();
+        scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> schedulePublishService(), 0L, 10000L, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -149,6 +162,32 @@ public class MubboServer {
                 });
             } finally {
                 clientChannelLock.unlock();
+            }
+        });
+    }
+
+    /**
+     * 定时发布服务
+     */
+    public void schedulePublishService() {
+        this.publisherChannels.entrySet().forEach(stringPublishServiceBodyEntry -> {
+            Set<String> remoteHosts = null;
+            if (null != knowHosts && knowHosts.size() > 0) {
+                for (String knowHost : knowHosts) {
+                    if (null != (remoteHosts = publishService(knowHost, stringPublishServiceBodyEntry.getValue())) && remoteHosts.size() > 0) {
+                        break;
+                    }
+                }
+            } else {
+                String macosNodes = mubboServerConfig.getMacosNodes();
+                for (String host : StringUtils.split(macosNodes, MACOS_SERVER_NODES_DELIMITER)) {
+                    if (null != (remoteHosts = publishService(host, stringPublishServiceBodyEntry.getValue())) && remoteHosts.size() > 0) {
+                        break;
+                    }
+                }
+            }
+            if (null != remoteHosts && remoteHosts.size() > 0) {
+                knowHosts = remoteHosts;
             }
         });
     }
@@ -261,8 +300,8 @@ public class MubboServer {
      * @throws RemotingConnectException
      */
     public void connectHost(final String host) throws InterruptedException, RemotingConnectException {
-        Channel channel;
-        if (null != (channel = this.clientChannelProcessor.getChannel(hostAddress)) && channel.isActive()) {
+        Channel channel = this.clientChannelProcessor.getChannel(host);
+        if (null != channel && channel.isActive()) {
             return;
         }
         final ConnectFuture connectFuture = ConnectFuture.builder().build();

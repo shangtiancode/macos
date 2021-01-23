@@ -443,6 +443,7 @@ public class NettyRemotingServer extends AbstractNettyRemoting implements Remoti
             if (NettyRemotingServer.this.channelEventListener != null) {
                 NettyRemotingServer.this.putNettyEvent(new NettyEvent(NettyEventType.EXCEPTION, remoteAddress, ctx.channel()));
             }
+            XtimerUtil.closeChannel(ctx.channel());
         }
     }
 

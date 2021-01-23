@@ -44,8 +44,8 @@ public class ClientChannelProcessor implements ChannelEventListener, NettyReques
 
     @Override
     public void onChannelClose(String remoteAddr, Channel channel) {
-        log.info("channel closed address {}", remoteAddr);
-        removeChannel(remoteAddr);
+//        log.info("channel closed address {}", remoteAddr);
+//        removeChannel(remoteAddr);
     }
 
     @Override
@@ -56,7 +56,8 @@ public class ClientChannelProcessor implements ChannelEventListener, NettyReques
 
     @Override
     public void onChannelIdle(String remoteAddr, Channel channel) {
-
+        log.info("channel idle address {}", remoteAddr);
+        removeChannel(remoteAddr);
     }
 
     @Override
