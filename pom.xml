@@ -14,8 +14,7 @@
         <module>macos-remoting</module>
         <module>macos-spring-boot-starter</module>
         <module>macos-client</module>
-        <module>macos-demo</module>
-        <module>macos-model</module>
+        <module>macos-example</module>
         <module>macos-mubbo</module>
     </modules>
 
@@ -102,11 +101,6 @@
             <dependency>
                 <groupId>com.alishangtian.macos</groupId>
                 <artifactId>macos-remoting</artifactId>
-                <version>${macos.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-model</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>

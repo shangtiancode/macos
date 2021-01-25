@@ -1,9 +1,8 @@
 spring:
   application:
-    name: macos-demo
+    name: macos-example
 server:
   port: 8888
-  random: 3600
 mubbo:
   use: true
   config:
@@ -11,7 +10,7 @@ mubbo:
       macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
     server:
       host: 127.0.0.1
-      macosNodes: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
+      macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
 netty:
   server:
     listenPort: 9000

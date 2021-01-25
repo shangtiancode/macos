@@ -17,10 +17,6 @@
             <artifactId>macos-remoting</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.alishangtian.macos</groupId>
-            <artifactId>macos-model</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>

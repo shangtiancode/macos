@@ -20,5 +20,5 @@ public class MubboServerConfig {
     private long keepLeadingInterval;
     private long checkFollowerInterval;
     private int partitionCount;
-    private String macosNodes;
+    private String macosBrokers;
 }

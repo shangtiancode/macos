@@ -10,5 +10,9 @@ import com.alishangtian.macos.remoting.common.ResponseFuture;
  * @Return
  */
 public interface InvokeCallback {
+    /**
+     * 回调
+     * @param responseFuture
+     */
     void operationComplete(final ResponseFuture responseFuture);
 }

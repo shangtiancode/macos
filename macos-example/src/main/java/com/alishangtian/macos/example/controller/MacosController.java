@@ -1,6 +1,6 @@
-package com.alishangtian.macos.demo.controller;
+package com.alishangtian.macos.example.controller;
 
-import com.alishangtian.macos.demo.service.MubboConsumerService;
+import com.alishangtian.macos.example.service.MubboConsumerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

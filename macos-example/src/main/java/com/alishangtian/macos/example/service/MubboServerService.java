@@ -1,4 +1,4 @@
-package com.alishangtian.macos.demo.service;
+package com.alishangtian.macos.example.service;
 
 import com.alishangtian.mubbo.provider.annotation.MubboService;
 import com.alishangtian.mubbo.provider.annotation.ServiceProvider;

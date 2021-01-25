@@ -29,13 +29,11 @@ import java.lang.reflect.Parameter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 
 /**
  * @Description mubbo server
@@ -179,7 +177,7 @@ public class MubboServer {
                     }
                 }
             } else {
-                String macosNodes = mubboServerConfig.getMacosNodes();
+                String macosNodes = mubboServerConfig.getMacosBrokers();
                 for (String host : StringUtils.split(macosNodes, MACOS_SERVER_NODES_DELIMITER)) {
                     if (null != (remoteHosts = publishService(host, stringPublishServiceBodyEntry.getValue())) && remoteHosts.size() > 0) {
                         break;
@@ -213,7 +211,7 @@ public class MubboServer {
                 }
             }
         } else {
-            String macosNodes = this.mubboServerConfig.getMacosNodes();
+            String macosNodes = this.mubboServerConfig.getMacosBrokers();
             for (String host : StringUtils.split(macosNodes, MACOS_SERVER_NODES_DELIMITER)) {
                 if (null != (remoteHosts = publishService(host, publishServiceBody)) && remoteHosts.size() > 0) {
                     break;

@@ -7,6 +7,7 @@ import java.lang.annotation.*;
 
 /**
  * consumer注解扫描支持
+ * @author maoxiaobing
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

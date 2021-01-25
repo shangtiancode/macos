@@ -1,4 +1,4 @@
-package com.alishangtian.macos.demo;
+package com.alishangtian.macos.example;
 
 import com.alishangtian.mubbo.comsumer.annotation.EnableMubboConsumer;
 import lombok.extern.log4j.Log4j2;
@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @Author maoxiaobing
  **/
 @SpringBootApplication(scanBasePackages = {"com.alishangtian.macos,com.alishangtian.mubbo"})
-@EnableMubboConsumer(scanPackages = {"com.alishangtian.macos.demo.service"})
+@EnableMubboConsumer(scanPackages = {"com.alishangtian.macos.example.service"})
 @Log4j2
 public class Application {
     public static void main(String[] args) {

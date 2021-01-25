@@ -47,10 +47,6 @@ public class DefaultMacosClient implements MacosClient {
      */
     private Set<String> brokerSet;
     /**
-     * 发布服务
-     */
-    private PublishServiceBody publishServiceBody;
-    /**
      * 注册中心集群列表
      */
     private Set<String> brokers;
