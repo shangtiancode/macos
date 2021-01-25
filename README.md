@@ -12,7 +12,7 @@
 
 ## 4.启动服务（demo）
 
-    ./run_demo.sh
+    ./run_example.sh
 
 ## 5.测试
 
