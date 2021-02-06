@@ -11,7 +11,6 @@ import com.alishangtian.macos.remoting.config.NettyServerConfig;
 import com.alishangtian.macos.remoting.exception.RemotingConnectException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.alishangtian.macos.remoting.netty.NettyRemotingServer;
-import com.alishangtian.mubbo.configuration.MubboServerConfig;
 import com.alishangtian.mubbo.server.processor.ClientChannelProcessor;
 import com.alishangtian.mubbo.server.processor.ClientSubscribeProcessor;
 import com.alishangtian.mubbo.server.processor.MubboServerChannelProcessor;

@@ -1,12 +1,15 @@
-package com.alishangtian.macos.configuration;
+package com.alishangtian.mubbo.comsumer.configuration;
 
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
+import com.alishangtian.mubbo.comsumer.ServiceConsumerBeanProcessor;
+import com.alishangtian.mubbo.comsumer.register.MubboConsumerRegister;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,26 +18,26 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @Description
- * @ClassName XtimerConfiguration
+ * @Description TODO
+ * @ClassName MubboConfiguration
  * @Author alishangtian
- * @Date 2020/6/6 20:28
- * @Version 0.0.1
+ * @Date 2021/1/3 12:06
  */
 @Configuration
-@ConditionalOnProperty(name = "macos.config.clientEnabled", havingValue = "true")
-public class XtimerClientAutoConfiguration {
+//@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
+@ConditionalOnBean(MubboConsumerRegister.class)
+public class MubboConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(NettyClientConfig.class)
-    @ConfigurationProperties(prefix = "macos.client")
+    @ConfigurationProperties(prefix = "netty.client")
     public NettyClientConfig nettyClientConfig() {
         return new NettyClientConfig();
     }
 
     @Bean
     @ConditionalOnMissingBean(ClientConfig.class)
-    @ConfigurationProperties(prefix = "macos.config")
+    @ConfigurationProperties(prefix = "mubbo.config.client")
     public ClientConfig clientConfig() {
         return new ClientConfig();
     }
@@ -59,4 +62,10 @@ public class XtimerClientAutoConfiguration {
         client.start();
         return client;
     }
+
+    @Bean
+    public ServiceConsumerBeanProcessor newServiceConsumerBeanProcessor(DefaultMacosClient macosClient, ApplicationContext applicationContext) {
+        return new ServiceConsumerBeanProcessor(applicationContext, macosClient);
+    }
+
 }

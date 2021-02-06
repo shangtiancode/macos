@@ -5,38 +5,29 @@ import com.alishangtian.mubbo.comsumer.annotation.MubboClient;
 import com.alishangtian.mubbo.comsumer.annotation.MubboConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 
 /**
- * @Description ServicePublishComponent
- * @ClassName ServicePublishComponent
+ * @Description ServiceConsumerBeanProcessor
+ * @ClassName ServiceConsumerBeanProcessor
  * @Author alishangtian
- * @Date 2021/1/3 12:02
+ * @Date 2021/2/6 12:00
  */
 @Slf4j
-@Component
-@DependsOn("macosClient")
-@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
-public class ServiceConsumerBeanProcessor implements BeanPostProcessor, ApplicationContextAware {
+public class ServiceConsumerBeanProcessor implements BeanPostProcessor {
     private ApplicationContext applicationContext;
+    private DefaultMacosClient macosClient;
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public ServiceConsumerBeanProcessor(ApplicationContext applicationContext, DefaultMacosClient macosClient) {
         this.applicationContext = applicationContext;
+        this.macosClient = macosClient;
     }
 
-    @Autowired
-    private DefaultMacosClient macosClient;
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {

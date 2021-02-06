@@ -25,6 +25,10 @@
             <groupId>com.alishangtian.macos</groupId>
             <artifactId>macos-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.alishangtian.mubbo</groupId>
+            <artifactId>macos-mubbo</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
