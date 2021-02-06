@@ -1,11 +1,11 @@
-package com.alishangtian.mubbo.comsumer.configuration;
+package com.alishangtian.macos.configuration;
 
 import com.alishangtian.macos.DefaultMacosClient;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.mubbo.comsumer.ServiceConsumerBeanProcessor;
-import com.alishangtian.mubbo.comsumer.register.MubboConsumerRegister;
+import com.alishangtian.mubbo.comsumer.annotation.EnableMubboConsumer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -18,19 +18,17 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @Description TODO
- * @ClassName MubboConfiguration
+ * @Description MubboConsumerAutoConfiguration
+ * @ClassName MubboConsumerAutoConfiguration
  * @Author alishangtian
- * @Date 2021/1/3 12:06
+ * @Date 2021/2/6 19:42
  */
 @Configuration
-//@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
-@ConditionalOnBean(MubboConsumerRegister.class)
-public class MubboConfiguration {
-
-    @Bean
+@ConditionalOnBean(annotation = EnableMubboConsumer.class)
+public class MubboConsumerAutoConfiguration {
+    @Bean("nettyClientConfigConsumer")
     @ConditionalOnMissingBean(NettyClientConfig.class)
-    @ConfigurationProperties(prefix = "netty.client")
+    @ConfigurationProperties(prefix = "netty.client.consumer")
     public NettyClientConfig nettyClientConfig() {
         return new NettyClientConfig();
     }
@@ -43,7 +41,7 @@ public class MubboConfiguration {
     }
 
     @Bean("macosClient")
-    public DefaultMacosClient macosClient(NettyClientConfig nettyClientConfig, ClientConfig clientConfig) {
+    public DefaultMacosClient macosClient(NettyClientConfig nettyClientConfigConsumer, ClientConfig clientConfig) {
         ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(4, new ThreadFactory() {
             AtomicInteger nums = new AtomicInteger();
 
@@ -53,7 +51,7 @@ public class MubboConfiguration {
             }
         });
         DefaultMacosClient client = DefaultMacosClient.builder()
-                .config(nettyClientConfig)
+                .config(nettyClientConfigConsumer)
                 .defaultChannelEventListener(new DefaultChannelEventListener())
                 .clientConfig(clientConfig)
                 .scheduledThreadPoolExecutor(scheduledThreadPoolExecutor)
@@ -67,5 +65,4 @@ public class MubboConfiguration {
     public ServiceConsumerBeanProcessor newServiceConsumerBeanProcessor(DefaultMacosClient macosClient, ApplicationContext applicationContext) {
         return new ServiceConsumerBeanProcessor(applicationContext, macosClient);
     }
-
 }
