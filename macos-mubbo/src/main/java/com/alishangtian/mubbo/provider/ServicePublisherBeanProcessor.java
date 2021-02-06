@@ -3,16 +3,13 @@ package com.alishangtian.mubbo.provider;
 import com.alishangtian.mubbo.provider.annotation.MubboService;
 import com.alishangtian.mubbo.provider.annotation.ServiceProvider;
 import com.alishangtian.mubbo.server.MubboServer;
+import com.alishangtian.mubbo.util.CharUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
-import com.alishangtian.mubbo.util.CharUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -23,14 +20,15 @@ import java.lang.reflect.Parameter;
  * @Author alishangtian
  * @Date 2021/1/3 12:02
  */
-@DependsOn("mubboServer")
-@Component
-@ConditionalOnProperty(name = "mubbo.use", havingValue = "true")
 @Slf4j
 public class ServicePublisherBeanProcessor implements BeanPostProcessor {
 
     @Autowired
     private MubboServer mubboServer;
+
+    public ServicePublisherBeanProcessor(MubboServer mubboServer) {
+        this.mubboServer = mubboServer;
+    }
 
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

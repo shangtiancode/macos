@@ -2,6 +2,7 @@ package com.alishangtian.macos.configuration;
 
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.config.NettyServerConfig;
+import com.alishangtian.mubbo.provider.ServicePublisherBeanProcessor;
 import com.alishangtian.mubbo.server.MubboServerConfig;
 import com.alishangtian.mubbo.provider.annotation.MubboService;
 import com.alishangtian.mubbo.server.MubboServer;
@@ -29,9 +30,9 @@ public class MubboProviderAutoConfiguration {
         return new NettyServerConfig();
     }
 
-    @Bean
+    @Bean("nettyClientConfigProvider")
     @ConditionalOnMissingBean(NettyClientConfig.class)
-    @ConfigurationProperties(prefix = "netty.client")
+    @ConfigurationProperties(prefix = "netty.client.provider")
     public NettyClientConfig nettyClientConfig() {
         return new NettyClientConfig();
     }
@@ -44,13 +45,18 @@ public class MubboProviderAutoConfiguration {
     }
 
     @Bean("mubboServer")
-    public MubboServer mubboServer(NettyServerConfig nettyServerConfig, MubboServerConfig mubboServerConfig, NettyClientConfig nettyClientConfig) {
+    public MubboServer mubboServer(NettyServerConfig nettyServerConfig, MubboServerConfig mubboServerConfig, NettyClientConfig nettyClientConfigProvider) {
         MubboServer mubboServer = MubboServer.builder()
                 .mubboServerConfig(mubboServerConfig)
-                .nettyClientConfig(nettyClientConfig)
+                .nettyClientConfig(nettyClientConfigProvider)
                 .nettyServerConfig(nettyServerConfig)
                 .build();
         mubboServer.start();
         return mubboServer;
+    }
+
+    @Bean
+    public ServicePublisherBeanProcessor initServicePublisherBeanProcessor(MubboServer mubboServer) {
+        return new ServicePublisherBeanProcessor(mubboServer);
     }
 }
