@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.alishangtian.macos.configuration.XtimerClientAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.alishangtian.macos.configuration.MubboProviderAutoConfiguration
