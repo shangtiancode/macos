@@ -229,7 +229,7 @@ public class BrokerStarter {
     }
 
     public boolean isConnected(String host) {
-        return null != this.clientChannelProcessor.getChannel(host);
+        return null != this.clientChannelProcessor.getChannel(host) && this.clientChannelProcessor.getChannel(host).isActive();
     }
 
     /**
