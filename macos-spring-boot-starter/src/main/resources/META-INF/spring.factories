@@ -1,1 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.alishangtian.macos.configuration.MubboProviderAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.alishangtian.macos.configuration.MubboConsumerAutoConfiguration

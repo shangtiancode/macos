@@ -18,7 +18,7 @@ netty:
     serverSelectorThreads: 3
     serverOnewaySemaphoreValue: 256
     serverAsyncSemaphoreValue: 64
-    serverChannelMaxIdleTimeSeconds: 30
+    serverChannelMaxIdleTimeSeconds: 120
     serverSocketSndBufSize: 65535
     serverSocketRcvBufSize: 65535
     serverPooledByteBufAllocatorEnable: true
@@ -30,7 +30,7 @@ netty:
       clientAsyncSemaphoreValue: 65535
       connectTimeoutMillis: 3000
       channelNotActiveInterval: 60000
-      clientChannelMaxIdleTimeSeconds: 30
+      clientChannelMaxIdleTimeSeconds: 120
       clientSocketSndBufSize: 65535
       clientSocketRcvBufSize: 65535
       clientPooledByteBufAllocatorEnable: true

@@ -1,17 +1,15 @@
 spring:
   application:
-    name: macos-demo
+    name: macos-example
 server:
   port: 8888
-  random: 3600
 mubbo:
-  use: true
   config:
     client:
-      macosBrokers: 140.143.184.197:10000,58.87.80.94:10000,129.204.169.119:10000
+      macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
     server:
-      host: 58.87.80.94
-      macosBrokers: 140.143.184.197:10000,58.87.80.94:10000,129.204.169.119:10000
+      host: 127.0.0.1
+      macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
 netty:
   server:
     listenPort: 9000
@@ -26,14 +24,27 @@ netty:
     serverPooledByteBufAllocatorEnable: true
     useEpollNativeSelector: false
   client:
-    clientWorkerThreads: 4
-    clientOnewaySemaphoreValue: 65535
-    clientAsyncSemaphoreValue: 65535
-    connectTimeoutMillis: 3000
-    channelNotActiveInterval: 60000
-    clientChannelMaxIdleTimeSeconds: 30
-    clientSocketSndBufSize: 65535
-    clientSocketRcvBufSize: 65535
-    clientPooledByteBufAllocatorEnable: true
-    clientCloseSocketIfTimeout: true
-    useTLS: false
+    consumer:
+      clientWorkerThreads: 4
+      clientOnewaySemaphoreValue: 65535
+      clientAsyncSemaphoreValue: 65535
+      connectTimeoutMillis: 3000
+      channelNotActiveInterval: 60000
+      clientChannelMaxIdleTimeSeconds: 120
+      clientSocketSndBufSize: 65535
+      clientSocketRcvBufSize: 65535
+      clientPooledByteBufAllocatorEnable: true
+      clientCloseSocketIfTimeout: true
+      useTLS: false
+    provider:
+      clientWorkerThreads: 4
+      clientOnewaySemaphoreValue: 65535
+      clientAsyncSemaphoreValue: 65535
+      connectTimeoutMillis: 3000
+      channelNotActiveInterval: 60000
+      clientChannelMaxIdleTimeSeconds: 120
+      clientSocketSndBufSize: 65535
+      clientSocketRcvBufSize: 65535
+      clientPooledByteBufAllocatorEnable: true
+      clientCloseSocketIfTimeout: true
+      useTLS: false
