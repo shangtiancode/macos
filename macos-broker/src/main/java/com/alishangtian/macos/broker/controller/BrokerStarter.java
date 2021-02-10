@@ -25,12 +25,14 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -200,6 +202,7 @@ public class BrokerStarter {
                 this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(host));
             }
         });
+
     }
 
     /**
@@ -256,6 +259,13 @@ public class BrokerStarter {
             subscriberChannels.values().stream()
                     .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(address))
                     .collect(Collectors.toList()).stream().forEach(stringChannelConcurrentMap -> stringChannelConcurrentMap.remove(address));
+            List<String> removeKeys = new ArrayList<>();
+            subscriberChannels.forEach((s, stringChannelConcurrentMap) -> {
+                if (stringChannelConcurrentMap.values() == null || stringChannelConcurrentMap.values().size() == 0) {
+                    removeKeys.add(s);
+                }
+            });
+            removeKeys.forEach(s -> subscriberChannels.remove(s));
         } finally {
             clientChannelLock.unlock();
         }

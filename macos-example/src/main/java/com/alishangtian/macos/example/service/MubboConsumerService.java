@@ -1,5 +1,6 @@
 package com.alishangtian.macos.example.service;
 
+import com.alishangtian.macos.example.entity.MubboBody;
 import com.alishangtian.mubbo.comsumer.annotation.MubboClient;
 import com.alishangtian.mubbo.comsumer.annotation.MubboConsumer;
 
@@ -9,19 +10,26 @@ import com.alishangtian.mubbo.comsumer.annotation.MubboConsumer;
  * @Author alishangtian
  * @Date 2021/1/15 16:06
  */
-@MubboClient("mubboConsumerService")
+@MubboClient("mubboService")
 public interface MubboConsumerService {
     /**
-     * @param id
+     * @param mubboBody
      * @return
      */
     @MubboConsumer("/insert")
-    Integer insertMubboService(Integer id);
+    Integer insertMubbo(MubboBody mubboBody);
+
+    /**
+     * @param mubboBody
+     * @return
+     */
+    @MubboConsumer("/update")
+    MubboBody updateMubbo(MubboBody mubboBody);
 
     /**
      * @param id
      * @return
      */
-    @MubboConsumer("/update")
-    Integer updateMubboService(Integer id);
+    @MubboConsumer("/delete")
+    Integer deleteMubbo(int id);
 }

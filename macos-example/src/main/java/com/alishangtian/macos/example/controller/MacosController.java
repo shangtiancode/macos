@@ -1,5 +1,7 @@
 package com.alishangtian.macos.example.controller;
 
+import com.alishangtian.macos.common.util.JSONUtils;
+import com.alishangtian.macos.example.entity.MubboBody;
 import com.alishangtian.macos.example.service.MubboConsumerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,13 +25,18 @@ public class MacosController {
     /**
      * 插入数据
      *
-     * @param id
+     * @param name
+     * @param age
+     * @param address
      * @return
      */
     @GetMapping("/insert")
-    public Integer insert(@RequestParam Integer id) {
-        log.info("insert data {}", id);
-        Integer result = mubboConsumerService.insertMubboService(id);
+    public Integer insert(@RequestParam String name, @RequestParam int age, @RequestParam String address) {
+        MubboBody mubboBody = MubboBody.builder().age(age).name(name).address(address)
+                .build();
+        log.info("insert data mubboBody:{}", JSONUtils.toJSONString(mubboBody));
+        Integer result = mubboConsumerService.insertMubbo(MubboBody.builder().age(age).name(name).address(address)
+                .build());
         return result;
     }
 
@@ -40,9 +47,22 @@ public class MacosController {
      * @return
      */
     @GetMapping("/update")
-    public Integer update(@RequestParam Integer id) {
-        log.info("update data {}", id);
-        Integer result = mubboConsumerService.updateMubboService(id);
+    public MubboBody update(@RequestParam Integer id, @RequestParam String name, @RequestParam int age, @RequestParam String address) {
+        MubboBody mubboBody = MubboBody.builder().id(id).age(age).name(name).address(address)
+                .build();
+        MubboBody result = mubboConsumerService.updateMubbo(mubboBody);
         return result;
+    }
+
+    /**
+     * 删除数据
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/delete")
+    public Integer delete(@RequestParam Integer id) {
+        mubboConsumerService.deleteMubbo(id);
+        return id;
     }
 }
