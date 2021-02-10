@@ -279,7 +279,8 @@ public class MubboServer {
         try {
             Object[] params = new Object[invokeServiceBody.getParameterValues().size()];
             for (int i = 0; i < publishServiceBody.getParameters().size(); i++) {
-                params[i] = Class.forName(publishServiceBody.getParameters().get(i)).cast(invokeServiceBody.getParameterValues().get(i));
+                params[i] = JSONUtils.parseObject(JSONUtils.toJSONString(invokeServiceBody.getParameterValues().get(i)), Class.forName(publishServiceBody.getParameters().get(i)));
+//                params[i] = Class.forName(publishServiceBody.getParameters().get(i)).cast(invokeServiceBody.getParameterValues().get(i));
             }
             Object result = publishServiceBody.getMethodCache().invoke(publishServiceBody.getBean(), params);
             return JSONUtils.toJSONString(result).getBytes(StandardCharsets.UTF_8);
