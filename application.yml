@@ -4,10 +4,11 @@ spring:
 macos:
   broker:
     mode: CLUSTER
-    host: 127.0.0.1
-    clusterNodes: 127.0.0.1:10001,127.0.0.1:10002
+    host: 127.0.0.1  # 本机host
+    clusterNodes: 127.0.0.1:10001,127.0.0.1:10002 # 集群节点列表
+    servicePubNotify: false # 有新的服务发布时是否通知订阅者
   server:
-    listenPort: 10000
+    listenPort: 10000 # server端监听端口
     serverWorkerThreads: 8
     serverCallbackExecutorThreads: 0
     serverSelectorThreads: 3

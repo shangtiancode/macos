@@ -50,10 +50,14 @@ public class RequestCode {
      * 服务客户端向服务server订阅服务
      */
     public static final int CLIENT_SUBSCRIBE_SERVICE_TO_SERVER = 109;
-    
+
     /**
      * 服务客户端向服务server请求服务
      */
     public static final int CLIENT_INVOKE_SERVICE_TO_SERVER = 110;
+    /**
+     * 注册中心通知consumer拉取服务发布信息
+     */
+    public static final int REGISTER_NOTIFY_CLIENT_FOR_SERVICE_PUB = 201;
 
 }

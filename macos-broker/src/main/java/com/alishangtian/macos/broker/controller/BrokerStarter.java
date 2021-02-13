@@ -9,6 +9,7 @@ import com.alishangtian.macos.enums.ModeEnum;
 import com.alishangtian.macos.processor.*;
 import com.alishangtian.macos.remoting.ConnectFuture;
 import com.alishangtian.macos.remoting.XtimerCommand;
+import com.alishangtian.macos.remoting.common.XtimerHelper;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.config.NettyServerConfig;
 import com.alishangtian.macos.remoting.exception.RemotingConnectException;
@@ -16,6 +17,8 @@ import com.alishangtian.macos.remoting.exception.RemotingSendRequestException;
 import com.alishangtian.macos.remoting.exception.RemotingTimeoutException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.alishangtian.macos.remoting.netty.NettyRemotingServer;
+import com.github.rholder.retry.*;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
 import io.netty.channel.Channel;
 import lombok.Data;
@@ -32,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -202,7 +204,6 @@ public class BrokerStarter {
                 this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(host));
             }
         });
-
     }
 
     /**
@@ -294,7 +295,9 @@ public class BrokerStarter {
                 ConcurrentMap<String, Channel> channelConcurrentHashMap = subscriberChannels.getOrDefault(service, Maps.newConcurrentMap());
                 channelConcurrentHashMap.put(address, channel);
                 subscriberChannels.put(service, channelConcurrentHashMap);
-                publishServices.put(service, this.publisherChannels.get(service));
+                if (null != this.publisherChannels.get(service) && this.publisherChannels.get(service).size() > 0) {
+                    publishServices.put(service, this.publisherChannels.get(service));
+                }
             });
         } finally {
             clientChannelLock.unlock();
@@ -314,21 +317,14 @@ public class BrokerStarter {
             publishServiceBodyConcurrentMap.put(publishServiceBody.getServerHost(), publishServiceBody);
             publisherChannels.put(publishServiceBody.getServiceName(), publishServiceBodyConcurrentMap);
             if (spread) {
-                executorService.execute(() -> syncServicePublishInfo(publishServiceBody));
+                syncServicePublishInfo(publishServiceBody);
+                if (brokerConfig.isServicePubNotify()) {
+                    notifyClientForServicePublishInfo(publishServiceBody);
+                }
             }
         } finally {
             serviceChannelLock.unlock();
         }
-    }
-
-    /**
-     * 获取客户端订阅服务列表
-     *
-     * @param services
-     * @return
-     */
-    public ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> getPublishServiceBodys(Set<String> services) {
-        return null;
     }
 
     /**
@@ -337,17 +333,64 @@ public class BrokerStarter {
      * @param publishServiceBody
      */
     public void syncServicePublishInfo(PublishServiceBody publishServiceBody) {
-        this.knownHosts.forEach(host -> {
-            if (!host.equals(hostAddress)) {
-                try {
-                    connectHost(host);
-                    XtimerCommand response = client.invokeSync(host, XtimerCommand.builder().code(RequestCode.BROKER_SPREAD_PROPOSAL_REQUEST).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
-                    if (!response.isSuccess()) {
-                        //TODO 重试
-                        log.error("sync service pushlish info to {} result {}", host, response.getResult());
+        this.executorService.submit(() -> {
+            Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
+                    .retryIfResult(Predicates.equalTo(false))
+                    .retryIfExceptionOfType(Exception.class)
+                    .retryIfRuntimeException()
+                    .withWaitStrategy(WaitStrategies.fixedWait(2, TimeUnit.SECONDS))
+                    .withStopStrategy(StopStrategies.stopAfterAttempt(5))
+                    .withRetryListener(new RetryListener() {
+                        @Override
+                        public <V> void onRetry(Attempt<V> attempt) {
+                            log.error("syncServicePublishInfo retry attemptTimes {}", attempt.getAttemptNumber());
+                        }
+                    })
+                    .build();
+            this.knownHosts.forEach(host -> {
+                if (!host.equals(hostAddress)) {
+                    try {
+                        retryer.call(() -> {
+                            connectHost(host);
+                            XtimerCommand response = client.invokeSync(host, XtimerCommand.builder().code(RequestCode.BROKER_SPREAD_PROPOSAL_REQUEST).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
+                            return response.isSuccess();
+                        });
+                    } catch (ExecutionException e) {
+                        log.error("syncServicePublishInfo retry server {} error {}", host, e.getMessage(), e);
+                    } catch (RetryException e) {
+                        log.error("syncServicePublishInfo retry server {} error {}", host, e.getMessage(), e);
                     }
-                } catch (Exception e) {
-                    log.error("sync service pushlish info to {} error {}", host, e.getMessage(), e);
+                }
+            });
+        });
+    }
+
+    /**
+     * 通知客户端同步服务发布者信息
+     */
+    public void notifyClientForServicePublishInfo(PublishServiceBody publishServiceBody) {
+        this.executorService.submit(() -> {
+            Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
+                    .retryIfResult(Predicates.equalTo(false))
+                    .retryIfExceptionOfType(Exception.class)
+                    .retryIfRuntimeException()
+                    .withWaitStrategy(WaitStrategies.fixedWait(2, TimeUnit.SECONDS))
+                    .withStopStrategy(StopStrategies.stopAfterAttempt(5))
+                    .build();
+            ConcurrentMap<String, Channel> subChannels = subscriberChannels.get(publishServiceBody.getServiceName());
+            for (Channel value : subChannels.values()) {
+                String address = XtimerHelper.parseChannelRemoteAddr(value);
+                try {
+                    retryer.call(() -> {
+                        XtimerCommand response = server.invokeSync(value,
+                                XtimerCommand.builder().code(RequestCode.REGISTER_NOTIFY_CLIENT_FOR_SERVICE_PUB).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(),
+                                NORMAL_RPC_SEND_TIMEOUT);
+                        return response.isSuccess();
+                    });
+                } catch (ExecutionException e) {
+                    log.error("notifyClientForServicePublishInfo retry address {} error {}", address, e.getMessage(), e);
+                } catch (RetryException e) {
+                    log.error("notifyClientForServicePublishInfo retry server {} error {}", address, e.getMessage(), e);
                 }
             }
         });

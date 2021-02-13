@@ -1,5 +1,7 @@
 package com.alishangtian.macos;
 
+import com.alishangtian.macos.common.protocol.PublishServiceBody;
+
 import java.util.List;
 import java.util.Set;
 
@@ -28,4 +30,12 @@ public interface MacosClient {
      * @return
      */
     byte[] invokeService(String service, List<Object> parameters);
+
+    /**
+     * 添加服务发布者
+     *
+     * @param publishServiceBody
+     * @return
+     */
+    boolean addPublishServiceBody(PublishServiceBody publishServiceBody);
 }

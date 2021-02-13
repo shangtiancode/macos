@@ -2,10 +2,10 @@ package com.alishangtian.macos.configuration;
 
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
 import com.alishangtian.macos.remoting.config.NettyServerConfig;
+import com.alishangtian.mubbo.comsumer.annotation.EnableMubboProvider;
 import com.alishangtian.mubbo.provider.ServicePublisherBeanProcessor;
-import com.alishangtian.mubbo.server.MubboServerConfig;
-import com.alishangtian.mubbo.provider.annotation.MubboService;
 import com.alishangtian.mubbo.server.MubboServer;
+import com.alishangtian.mubbo.server.MubboServerConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
  * @Version 0.0.1
  */
 @Configuration
-@ConditionalOnBean(annotation = MubboService.class)
+@ConditionalOnBean(annotation = EnableMubboProvider.class)
 public class MubboProviderAutoConfiguration {
 
     @Bean

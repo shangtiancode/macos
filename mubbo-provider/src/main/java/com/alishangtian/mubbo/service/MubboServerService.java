@@ -1,7 +1,7 @@
-package com.alishangtian.macos.example.service;
+package com.alishangtian.mubbo.service;
 
+import com.alishangtian.macos.common.entity.MubboBody;
 import com.alishangtian.macos.common.util.JSONUtils;
-import com.alishangtian.macos.example.entity.MubboBody;
 import com.alishangtian.mubbo.provider.annotation.MubboService;
 import com.alishangtian.mubbo.provider.annotation.ServiceProvider;
 import com.google.common.collect.Maps;

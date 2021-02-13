@@ -6,6 +6,7 @@ import com.alishangtian.macos.common.protocol.RequestCode;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.config.ClientConfig;
 import com.alishangtian.macos.event.DefaultChannelEventListener;
+import com.alishangtian.macos.processor.NotifySubServiceProcessor;
 import com.alishangtian.macos.remoting.ConnectFuture;
 import com.alishangtian.macos.remoting.XtimerCommand;
 import com.alishangtian.macos.remoting.config.NettyClientConfig;
@@ -13,6 +14,11 @@ import com.alishangtian.macos.remoting.exception.RemotingConnectException;
 import com.alishangtian.macos.remoting.exception.RemotingException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
+import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
 import io.netty.channel.Channel;
 import lombok.Builder;
@@ -20,9 +26,12 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @Description 建立到集群的连接，并能订阅和发布服务
@@ -62,10 +71,16 @@ public class DefaultMacosClient implements MacosClient {
     @lombok.Builder.Default
     private Set<String> subscribeServices = new CopyOnWriteArraySet<>();
     /**
-     * 标识一下定时任务是否开启
+     * 添加服务发布者信息锁
      */
     @lombok.Builder.Default
-    private final AtomicBoolean subcriberStarted = new AtomicBoolean(false);
+    private ReentrantLock addPublishServiceBodyLock = new ReentrantLock();
+
+    /**
+     * 连接服务器锁
+     */
+    @lombok.Builder.Default
+    private ReentrantLock connectServerLock = new ReentrantLock();
 
     @Override
     public void start() {
@@ -75,27 +90,45 @@ public class DefaultMacosClient implements MacosClient {
     @Override
     public boolean subscribeService(String service) {
         subscribeServices.add(service);
-        if (subcriberStarted.compareAndSet(false, true)) {
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-                log.info("subscribeServices {}", JSONUtils.toJSONString(subscribeServices));
-                for (String broker : brokers) {
-                    try {
+        publicExecutor.submit(() -> {
+            try {
+                RetryerBuilder.<Boolean>newBuilder()
+                        .retryIfResult(Predicates.equalTo(false))
+                        .retryIfExceptionOfType(Exception.class)
+                        .retryIfRuntimeException()
+                        .withWaitStrategy(WaitStrategies.fixedWait(2, TimeUnit.SECONDS))
+                        .withStopStrategy(StopStrategies.stopAfterAttempt(5))
+                        .build().call(() -> {
+                    log.info("subscribe service [{}]", service);
+                    List<String> subServices = new ArrayList<>();
+                    subServices.add(service);
+                    for (String broker : brokers) {
                         connectHost(broker);
                         XtimerCommand response = client.invokeSync(broker, XtimerCommand.builder().
-                                        code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(subscribeServices).getBytes(StandardCharsets.UTF_8)).build(),
+                                        code(RequestCode.CLIENT_SUBSCRIBE_TO_BROKER_REQUEST).load(JSONUtils.toJSONString(subServices).getBytes(StandardCharsets.UTF_8)).build(),
                                 clientConfig.getConnectBrokerTimeout());
                         if (!response.isSuccess()) {
                             log.error("subscribe service {} error", JSONUtils.toJSONString(service));
+                            continue;
                         }
-                        this.subscribeServicesWrapper = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
+                        ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> servicePubs = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
                         });
-                        log.info("subscribeServicesWrapper from broker {} {}", broker, JSONUtils.toJSONString(subscribeServicesWrapper));
-                    } catch (Exception e) {
-                        log.error("connect broker {} error {}", broker, e.getMessage(), e);
+                        log.info("subscribe service from broker [{}] result [{}]", broker, JSONUtils.toJSONString(servicePubs.get(service)));
+                        if (null == servicePubs.get(service)) {
+                            log.error("service {} has no provider", service);
+                            return true;
+                        }
+                        subscribeServicesWrapper.put(service, servicePubs.get(service));
+                        return true;
                     }
-                }
-            }, 0L, clientConfig.getSubscriberHeartBeatTimeInterval(), TimeUnit.MILLISECONDS);
-        }
+                    return false;
+                });
+            } catch (ExecutionException e) {
+                log.error("subscribe service {} retry error {}", service, e.getMessage(), e);
+            } catch (RetryException e) {
+                log.error("subscribe service {} retry error {}", service, e.getMessage(), e);
+            }
+        });
         return true;
     }
 
@@ -117,9 +150,21 @@ public class DefaultMacosClient implements MacosClient {
         return new byte[0];
     }
 
+    @Override
+    public boolean addPublishServiceBody(PublishServiceBody publishServiceBody) {
+        addPublishServiceBodyLock.lock();
+        try {
+            ConcurrentMap<String, PublishServiceBody> publishServiceBodyConcurrentMap = subscribeServicesWrapper.getOrDefault(publishServiceBody.getServiceName(), Maps.newConcurrentMap());
+            publishServiceBodyConcurrentMap.put(publishServiceBody.getServerHost(), publishServiceBody);
+            subscribeServicesWrapper.put(publishServiceBody.getServiceName(), publishServiceBodyConcurrentMap);
+        } finally {
+            addPublishServiceBodyLock.unlock();
+        }
+        return true;
+    }
+
     /**
      * 通过负载均衡获取服务发布者列表
-     * todo 负载均衡逻辑实现
      *
      * @param service
      * @return
@@ -136,6 +181,7 @@ public class DefaultMacosClient implements MacosClient {
 
     public void start0() {
         client = new NettyRemotingClient(config, defaultChannelEventListener);
+        client.registerProcessor(RequestCode.REGISTER_NOTIFY_CLIENT_FOR_SERVICE_PUB, new NotifySubServiceProcessor(this), publicExecutor);
         client.start();
         String brokers = clientConfig.getMacosBrokers();
         for (String broker : brokers.split(",")) {
@@ -168,19 +214,28 @@ public class DefaultMacosClient implements MacosClient {
         if (null != (channel = this.defaultChannelEventListener.getChannel(host)) && channel.isActive()) {
             return;
         }
-        final ConnectFuture connectFuture = ConnectFuture.builder().build();
-        this.client.connect(host).addListener(future -> {
-            if (future.isSuccess()) {
-                log.info("connect broker {} send success", host);
-                this.defaultChannelEventListener.addCountdownLatch(host, connectFuture.getCountDownLatch());
-            } else {
-                connectFuture.connectError(host);
+        connectServerLock.lock();
+        try {
+            if (null != (channel = this.defaultChannelEventListener.getChannel(host)) && channel.isActive()) {
+                return;
             }
-        });
-        connectFuture.await();
-        if (null != connectFuture.getRemotingConnectException()) {
-            throw connectFuture.getRemotingConnectException();
+            final ConnectFuture connectFuture = ConnectFuture.builder().build();
+            this.client.connect(host).addListener(future -> {
+                if (future.isSuccess()) {
+                    log.info("connect broker {} send success", host);
+                    this.defaultChannelEventListener.addCountdownLatch(host, connectFuture.getCountDownLatch());
+                } else {
+                    connectFuture.connectError(host);
+                }
+            });
+            connectFuture.await();
+            if (null != connectFuture.getRemotingConnectException()) {
+                throw connectFuture.getRemotingConnectException();
+            }
+            log.info("connect broker {} success", host);
+        } finally {
+            connectServerLock.unlock();
         }
-        log.info("connect broker {} success", host);
+
     }
 }

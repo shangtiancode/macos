@@ -1,12 +1,8 @@
 spring:
   application:
-    name: macos-example
-server:
-  port: 8888
+    name: mubbo-provider
 mubbo:
   config:
-    client:
-      macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
     server:
       host: 127.0.0.1
       macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
@@ -24,18 +20,6 @@ netty:
     serverPooledByteBufAllocatorEnable: true
     useEpollNativeSelector: false
   client:
-    consumer:
-      clientWorkerThreads: 4
-      clientOnewaySemaphoreValue: 65535
-      clientAsyncSemaphoreValue: 65535
-      connectTimeoutMillis: 3000
-      channelNotActiveInterval: 60000
-      clientChannelMaxIdleTimeSeconds: 120
-      clientSocketSndBufSize: 65535
-      clientSocketRcvBufSize: 65535
-      clientPooledByteBufAllocatorEnable: true
-      clientCloseSocketIfTimeout: true
-      useTLS: false
     provider:
       clientWorkerThreads: 4
       clientOnewaySemaphoreValue: 65535

@@ -1,6 +1,6 @@
-package com.alishangtian.macos.example.service;
+package com.alishangtian.mubbo.consumer.service;
 
-import com.alishangtian.macos.example.entity.MubboBody;
+import com.alishangtian.macos.common.entity.MubboBody;
 import com.alishangtian.mubbo.comsumer.annotation.MubboClient;
 import com.alishangtian.mubbo.comsumer.annotation.MubboConsumer;
 

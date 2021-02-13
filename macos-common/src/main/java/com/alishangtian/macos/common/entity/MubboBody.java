@@ -1,4 +1,4 @@
-package com.alishangtian.macos.example.entity;
+package com.alishangtian.macos.common.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

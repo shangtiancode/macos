@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>macos-example</artifactId>
+    <artifactId>mubbo-consumer</artifactId>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

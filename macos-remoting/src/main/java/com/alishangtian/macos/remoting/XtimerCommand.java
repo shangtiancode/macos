@@ -33,8 +33,6 @@ public class XtimerCommand implements Serializable {
     private long opaque = requestId.getAndIncrement();
     private int result;
     private String hostAddr;
-    @lombok.Builder.Default
-    private boolean waitingFollowerTopology = false;
 
     public ByteBuffer encode() {
         byte[] bytes = encodeBytes();

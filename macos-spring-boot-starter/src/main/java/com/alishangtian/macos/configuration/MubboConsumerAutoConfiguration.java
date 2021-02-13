@@ -13,8 +13,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -50,12 +49,13 @@ public class MubboConsumerAutoConfiguration {
                 return new Thread(runnable, "macos-client-scheduled-pool-thread-" + nums.getAndIncrement());
             }
         });
+        ThreadPoolExecutor executors = new ThreadPoolExecutor(4, 8, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         DefaultMacosClient client = DefaultMacosClient.builder()
                 .config(nettyClientConfigConsumer)
                 .defaultChannelEventListener(new DefaultChannelEventListener())
                 .clientConfig(clientConfig)
                 .scheduledThreadPoolExecutor(scheduledThreadPoolExecutor)
-                .publicExecutor(null)
+                .publicExecutor(executors)
                 .build();
         client.start();
         return client;

@@ -6,6 +6,7 @@ macos:
     mode: CLUSTER
     host: 127.0.0.1
     clusterNodes: 127.0.0.1:10001,127.0.0.1:10002
+    servicePubNotify: false
   server:
     listenPort: 10000
     serverWorkerThreads: 8
