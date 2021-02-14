@@ -17,22 +17,22 @@ import com.alishangtian.macos.remoting.exception.RemotingSendRequestException;
 import com.alishangtian.macos.remoting.exception.RemotingTimeoutException;
 import com.alishangtian.macos.remoting.netty.NettyRemotingClient;
 import com.alishangtian.macos.remoting.netty.NettyRemotingServer;
-import com.github.rholder.retry.*;
-import com.google.common.base.Predicates;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 import io.netty.channel.Channel;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -81,13 +81,19 @@ public class BrokerStarter {
      */
     private CopyOnWriteArraySet<String> knownHosts = new CopyOnWriteArraySet();
     /**
-     * 客户端订阅列表
+     * 客户端订阅列表<service<clientAddress,channel>>
      */
     private ConcurrentMap<String, ConcurrentMap<String, Channel>> subscriberChannels = Maps.newConcurrentMap();
     /**
      * 客户端发布列表 <服务名称<server地址，服务详细信息>>
      */
     private ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>> publisherChannels = Maps.newConcurrentMap();
+
+    /**
+     * 客户端发布服务列表 <客户端地址,服务器地址>
+     */
+    private ConcurrentMap<String, String> publisherClientChannels = Maps.newConcurrentMap();
+
     /**
      * 订阅客户端操作lock
      */
@@ -97,6 +103,11 @@ public class BrokerStarter {
      * 服务发布端操作lock
      */
     private ReentrantLock serviceChannelLock = new ReentrantLock();
+
+    /**
+     * 是否同步过服务发布者信息
+     */
+    private AtomicBoolean hasSyncPubInfos = new AtomicBoolean(false);
 
     private ExecutorService executorService = new ThreadPoolExecutor(Math.max(CORE_SIZE, MIN_WORKER_THREAD_COUNT), Math.max(MAX_SIZE, MIN_WORKER_THREAD_COUNT), 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024), new ThreadFactory() {
         final AtomicLong num = new AtomicLong();
@@ -129,13 +140,13 @@ public class BrokerStarter {
         server.registerProcessor(RequestCode.GET_SERVICE_SUBSCRIBER_LIST_REQUEST, new GetServiceSubscriberProcessor(this), executorService);
         server.registerProcessor(RequestCode.GET_SERVICE_PUBLISHER_LIST_REQUEST, new GetServicePublisherProcessor(this), executorService);
         server.registerProcessor(RequestCode.GET_BROKER_LIST_REQUEST, new GetBrokerListProcessor(this), executorService);
+        server.registerProcessor(RequestCode.BROKER_SPREAD_PROVIDER_OFFLINE_REQUEST, new ProviderOfflineProcessor(this), executorService);
         server.start();
         client = new NettyRemotingClient(nettyClientConfig, clientChannelProcessor);
         client.start();
         if (brokerConfig.getMode().equals(ModeEnum.CLUSTER.name())) {
             joinCluster();
             scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::pingServer, 3000L, 3000L, TimeUnit.MILLISECONDS);
-            scheduledThreadPoolExecutor.scheduleWithFixedDelay(this::pingServiceServer, 3000L, 3000L, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -147,14 +158,18 @@ public class BrokerStarter {
         String[] clusterNodes = clusterNodeString.split(",");
         for (String clusterNode : clusterNodes) {
             try {
-                Channel channel = this.clientChannelProcessor.getChannel(clusterNode);
-                if (null == channel || !channel.isActive()) {
-                    connectHost(clusterNode);
+                if (clusterNode.equals(this.hostAddress)) {
+                    continue;
                 }
-                client.invokeSync(clusterNode, XtimerCommand.builder()
+                connectHost(clusterNode);
+                XtimerCommand response = client.invokeSync(clusterNode, XtimerCommand.builder()
                         .code(RequestCode.BROKER_PING_REQUEST)
-                        .load(JSONUtils.toJSONString(PingRequestBody.builder().hostAddress(hostAddress).knownHosts(this.knownHosts).build()).getBytes())
+                        .load(JSONUtils.toJSONString(PingRequestBody.builder().hostAddress(hostAddress).knownHosts(this.knownHosts).needPubInfos(true).build()).getBytes())
                         .build(), NORMAL_RPC_SEND_TIMEOUT);
+                if (response.isSuccess() && this.publisherChannels.isEmpty()) {
+                    this.publisherChannels = JSONUtils.parseObject(response.getLoad(), new TypeReference<ConcurrentMap<String, ConcurrentMap<String, PublishServiceBody>>>() {
+                    });
+                }
             } catch (InterruptedException e) {
                 log.warn("connect clusterNode error {}", e.getMessage(), e);
             } catch (RemotingConnectException | RemotingSendRequestException | RemotingTimeoutException e) {
@@ -189,24 +204,6 @@ public class BrokerStarter {
     }
 
     /**
-     * 检查服务发布者是否在线
-     */
-    public void pingServiceServer() {
-        log.info("subscriber {}", JSONUtils.toJSONString(this.subscriberChannels));
-        log.info("publisher {}", JSONUtils.toJSONString(this.publisherChannels));
-        Set<String> hosts = new HashSet<>();
-        this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> hosts.addAll(stringPublishServiceBodyConcurrentMap.keySet()));
-        hosts.forEach(host -> {
-            try {
-                connectHost(host);
-            } catch (Exception e) {
-                log.error("connect host {} error,", host, e.getMessage(), e);
-                this.publisherChannels.values().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(host));
-            }
-        });
-    }
-
-    /**
      * connectHost
      *
      * @param host
@@ -219,7 +216,6 @@ public class BrokerStarter {
         final ConnectFuture connectFuture = ConnectFuture.builder().build();
         this.client.connect(host).addListener(future -> {
             if (future.isSuccess()) {
-                log.info("connect broker {} send success", host);
                 this.clientChannelProcessor.addCountdownLatch(host, connectFuture.getCountDownLatch());
             } else {
                 connectFuture.connectError(host);
@@ -244,8 +240,6 @@ public class BrokerStarter {
      */
     public void mergeKnownHosts(String sourceHost, Set<String> pKnownHosts) {
         log.info("sourceHost:{} -> targetHost:{} , mergeKnownHosts {} to {}", sourceHost, hostAddress, pKnownHosts, this.knownHosts);
-        List<String> unKnownHost = pKnownHosts.stream().filter(host -> !knownHosts.contains(host) && !host.equals(hostAddress)).collect(Collectors.toList());
-        log.info("sourceHost:{} -> targetHost:{} , unKnownHost {}", sourceHost, hostAddress, unKnownHost);
         this.knownHosts.addAll(pKnownHosts);
     }
 
@@ -255,6 +249,7 @@ public class BrokerStarter {
      * @param address
      */
     public void removeChannel(String address) {
+        log.info("channel from address {} is offline", address);
         clientChannelLock.lock();
         try {
             subscriberChannels.values().stream()
@@ -272,9 +267,41 @@ public class BrokerStarter {
         }
         serviceChannelLock.lock();
         try {
+            String pubServerAddress = publisherClientChannels.get(address);
+            if (StringUtils.isNotBlank(pubServerAddress)) {
+                doServiceUnPublishInfo(pubServerAddress);
+                syncPublisherOffline(pubServerAddress);
+            }
+            List<String> removeKeys = new ArrayList<>();
+            publisherChannels.forEach((s, stringChannelConcurrentMap) -> {
+                if (stringChannelConcurrentMap.values() == null || stringChannelConcurrentMap.values().size() == 0) {
+                    removeKeys.add(s);
+                }
+            });
+            removeKeys.forEach(s -> publisherChannels.remove(s));
+        } finally {
+            serviceChannelLock.unlock();
+        }
+    }
+
+    /**
+     * 服务provider下线
+     *
+     * @param pubServerAddress
+     */
+    public void removeOfflineProvider(String pubServerAddress) {
+        serviceChannelLock.lock();
+        try {
             publisherChannels.values().stream()
-                    .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(address))
-                    .collect(Collectors.toList()).stream().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(address));
+                    .filter(stringChannelConcurrentMap -> stringChannelConcurrentMap.containsKey(pubServerAddress))
+                    .collect(Collectors.toList()).stream().forEach(stringPublishServiceBodyConcurrentMap -> stringPublishServiceBodyConcurrentMap.remove(pubServerAddress));
+            List<String> removeKeys = new ArrayList<>();
+            publisherChannels.forEach((s, stringChannelConcurrentMap) -> {
+                if (stringChannelConcurrentMap.values() == null || stringChannelConcurrentMap.values().size() == 0) {
+                    removeKeys.add(s);
+                }
+            });
+            removeKeys.forEach(s -> publisherChannels.remove(s));
         } finally {
             serviceChannelLock.unlock();
         }
@@ -310,16 +337,17 @@ public class BrokerStarter {
      *
      * @param publishServiceBody
      */
-    public void addPublishChannel(PublishServiceBody publishServiceBody, boolean spread) {
+    public void addPublishChannel(PublishServiceBody publishServiceBody, boolean spread, String pubClientAddress) {
         serviceChannelLock.lock();
         try {
             ConcurrentMap<String, PublishServiceBody> publishServiceBodyConcurrentMap = publisherChannels.getOrDefault(publishServiceBody.getServiceName(), Maps.newConcurrentMap());
             publishServiceBodyConcurrentMap.put(publishServiceBody.getServerHost(), publishServiceBody);
             publisherChannels.put(publishServiceBody.getServiceName(), publishServiceBodyConcurrentMap);
             if (spread) {
+                publisherClientChannels.put(pubClientAddress, publishServiceBody.getServerHost());
                 syncServicePublishInfo(publishServiceBody);
                 if (brokerConfig.isServicePubNotify()) {
-                    notifyClientForServicePublishInfo(publishServiceBody);
+                    notifyClientForServicePublisherInfo(publishServiceBody);
                 }
             }
         } finally {
@@ -334,31 +362,25 @@ public class BrokerStarter {
      */
     public void syncServicePublishInfo(PublishServiceBody publishServiceBody) {
         this.executorService.submit(() -> {
-            Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
-                    .retryIfResult(Predicates.equalTo(false))
-                    .retryIfExceptionOfType(Exception.class)
-                    .retryIfRuntimeException()
-                    .withWaitStrategy(WaitStrategies.fixedWait(2, TimeUnit.SECONDS))
-                    .withStopStrategy(StopStrategies.stopAfterAttempt(5))
-                    .withRetryListener(new RetryListener() {
-                        @Override
-                        public <V> void onRetry(Attempt<V> attempt) {
-                            log.error("syncServicePublishInfo retry attemptTimes {}", attempt.getAttemptNumber());
-                        }
-                    })
-                    .build();
             this.knownHosts.forEach(host -> {
                 if (!host.equals(hostAddress)) {
-                    try {
-                        retryer.call(() -> {
+                    int count = 0;
+                    while (count < 5) {
+                        try {
                             connectHost(host);
                             XtimerCommand response = client.invokeSync(host, XtimerCommand.builder().code(RequestCode.BROKER_SPREAD_PROPOSAL_REQUEST).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
-                            return response.isSuccess();
-                        });
-                    } catch (ExecutionException e) {
-                        log.error("syncServicePublishInfo retry server {} error {}", host, e.getMessage(), e);
-                    } catch (RetryException e) {
-                        log.error("syncServicePublishInfo retry server {} error {}", host, e.getMessage(), e);
+                            if (response.isSuccess()) {
+                                break;
+                            }
+                        } catch (Exception e) {
+                            log.error("syncServicePublishInfo to address [{}] error retry now", host);
+                        }
+                        try {
+                            Thread.sleep(500L);
+                        } catch (InterruptedException e) {
+                            log.error("syncServicePublishInfo thread sleep error {}", e.getMessage(), e);
+                        }
+                        count++;
                     }
                 }
             });
@@ -366,33 +388,110 @@ public class BrokerStarter {
     }
 
     /**
+     * 同步服务发布者掉线信息
+     * 1、通知其他broker provider下线
+     * 2、通知其他subscribers provider下线
+     *
+     * @param pubServerAddress
+     */
+    public void syncPublisherOffline(String pubServerAddress) {
+        this.executorService.submit(() -> this.knownHosts.forEach(host -> {
+            if (!host.equals(hostAddress)) {
+                int count = 0;
+                while (count < 5) {
+                    try {
+                        connectHost(host);
+                        XtimerCommand response = client.invokeSync(host, XtimerCommand.builder().code(RequestCode.BROKER_SPREAD_PROVIDER_OFFLINE_REQUEST).load(JSONUtils.toJSONString(PublishServiceBody.builder().serverHost(pubServerAddress).build()).getBytes(StandardCharsets.UTF_8)).build(), 5000L);
+                        if (response.isSuccess()) {
+                            break;
+                        }
+                    } catch (Exception e) {
+                        log.error("syncPublisherOffline to address [{}] error retry now", host);
+                    }
+                    try {
+                        Thread.sleep(500L);
+                    } catch (InterruptedException e) {
+                        log.error("syncPublisherOffline thread sleep error {}", e.getMessage(), e);
+                    }
+                    count++;
+                }
+            }
+        }));
+    }
+
+
+    /**
      * 通知客户端同步服务发布者信息
      */
-    public void notifyClientForServicePublishInfo(PublishServiceBody publishServiceBody) {
+    public void notifyClientForServicePublisherInfo(PublishServiceBody publishServiceBody) {
+        log.info("notifyClientForServicePublisherInfo info:{}", JSONUtils.toJSONString(publishServiceBody));
         this.executorService.submit(() -> {
-            Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
-                    .retryIfResult(Predicates.equalTo(false))
-                    .retryIfExceptionOfType(Exception.class)
-                    .retryIfRuntimeException()
-                    .withWaitStrategy(WaitStrategies.fixedWait(2, TimeUnit.SECONDS))
-                    .withStopStrategy(StopStrategies.stopAfterAttempt(5))
-                    .build();
             ConcurrentMap<String, Channel> subChannels = subscriberChannels.get(publishServiceBody.getServiceName());
             for (Channel value : subChannels.values()) {
                 String address = XtimerHelper.parseChannelRemoteAddr(value);
-                try {
-                    retryer.call(() -> {
-                        XtimerCommand response = server.invokeSync(value,
+                int count = 0;
+                while (count < 5) {
+                    try {
+                        XtimerCommand response = this.server.invokeSync(value,
                                 XtimerCommand.builder().code(RequestCode.REGISTER_NOTIFY_CLIENT_FOR_SERVICE_PUB).load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(),
                                 NORMAL_RPC_SEND_TIMEOUT);
-                        return response.isSuccess();
-                    });
-                } catch (ExecutionException e) {
-                    log.error("notifyClientForServicePublishInfo retry address {} error {}", address, e.getMessage(), e);
-                } catch (RetryException e) {
-                    log.error("notifyClientForServicePublishInfo retry server {} error {}", address, e.getMessage(), e);
+                        if (response.isSuccess()) {
+                            break;
+                        }
+                    } catch (Exception e) {
+                        log.error("notifyClientForServicePublisherInfo address [{}] error retry now", address);
+                    }
+                    try {
+                        Thread.sleep(500L);
+                    } catch (InterruptedException e) {
+                        log.error("notifyClientForServicePublisherInfo thread sleep error {}", e.getMessage(), e);
+                    }
+                    count++;
                 }
             }
+        });
+    }
+
+    /**
+     * 通知客户端同步服务发布者下线信息
+     * 1、查询该broker下发布了什么服务
+     * 2、发布的服务被哪些channel订阅了，并通知相关channel下线provider
+     */
+    public void doServiceUnPublishInfo(String providerAddress) {
+        log.info("doServiceUnPublishInfo providerAddress:{}", providerAddress);
+        this.executorService.submit(() -> {
+            this.publisherChannels.values().stream().
+                    filter(o -> o.containsKey(providerAddress))
+                    .collect(Collectors.toList()).forEach(o -> {
+                PublishServiceBody publishServiceBody = o.get(providerAddress);
+                ConcurrentMap<String, Channel> subChannels = subscriberChannels.get(publishServiceBody.getServiceName());
+                for (Channel value : subChannels.values()) {
+                    String address = XtimerHelper.parseChannelRemoteAddr(value);
+                    int count = 0;
+                    while (count < 5) {
+                        try {
+                            XtimerCommand response = this.server.invokeSync(value,
+                                    XtimerCommand.builder().code(RequestCode.REGISTER_NOTIFY_CLIENT_FOR_SERVICE_UNPUB)
+                                            .load(JSONUtils.toJSONString(publishServiceBody).getBytes(StandardCharsets.UTF_8)).build(),
+                                    NORMAL_RPC_SEND_TIMEOUT);
+                            if (response.isSuccess()) {
+                                break;
+                            }
+                        } catch (Exception e) {
+                            log.error("doServiceUnPublishInfo address [{}] error retry now", address);
+                        }
+                        try {
+                            Thread.sleep(500L);
+                        } catch (InterruptedException e) {
+                            log.error("doServiceUnPublishInfo thread sleep error {}", e.getMessage(), e);
+                        }
+                        count++;
+                    }
+                }
+            });
+            publisherChannels.values().stream()
+                    .filter(o -> o.containsKey(providerAddress))
+                    .collect(Collectors.toList()).forEach(o -> o.remove(providerAddress));
         });
     }
 

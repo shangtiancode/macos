@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @Date once upon a time
  * @Author maoxiaobing
  **/
-@SpringBootApplication(scanBasePackages = {"com.alishangtian.macos,com.alishangtian.mubbo"})
+@SpringBootApplication
 @EnableMubboConsumer(scanPackages = {"com.alishangtian.mubbo.consumer.service"})
 @Log4j2
 public class Application {

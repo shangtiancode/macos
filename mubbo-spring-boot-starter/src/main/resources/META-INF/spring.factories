@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.alishangtian.mubbo.configuration.MubboProviderAutoConfiguration,com.alishangtian.mubbo.configuration.MubboConsumerAutoConfiguration

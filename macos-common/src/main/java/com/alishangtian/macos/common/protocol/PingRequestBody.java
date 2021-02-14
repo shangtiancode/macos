@@ -21,4 +21,6 @@ import java.util.Set;
 public class PingRequestBody implements Serializable {
     private Set<String> knownHosts;
     private String hostAddress;
+    @lombok.Builder.Default
+    private boolean needPubInfos = false;
 }

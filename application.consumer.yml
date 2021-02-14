@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: mubbo-consumer
+server:
+  port: 8888
+mubbo:
+  config:
+    client:
+      macosBrokers: 127.0.0.1:10000,127.0.0.1:10001,127.0.0.1:10002
+netty:
+  client:
+    consumer:
+      clientWorkerThreads: 4
+      clientOnewaySemaphoreValue: 65535
+      clientAsyncSemaphoreValue: 65535
+      connectTimeoutMillis: 3000
+      channelNotActiveInterval: 60000
+      clientChannelMaxIdleTimeSeconds: 120
+      clientSocketSndBufSize: 65535
+      clientSocketRcvBufSize: 65535
+      clientPooledByteBufAllocatorEnable: true
+      clientCloseSocketIfTimeout: true
+      useTLS: false

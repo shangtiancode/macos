@@ -27,7 +27,7 @@ public class BrokerSpreadProposalProcessor implements NettyRequestProcessor {
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
         PublishServiceBody publishServiceBody = JSONUtils.parseObject(request.getLoad(), PublishServiceBody.class);
-        this.brokerStarter.addPublishChannel(publishServiceBody, false);
+        this.brokerStarter.addPublishChannel(publishServiceBody, false, null);
         return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).build();
     }
 

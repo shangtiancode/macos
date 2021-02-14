@@ -1,6 +1,6 @@
 spring:
   application:
-    name: macos-consumer
+    name: mubbo-consumer
 server:
   port: 8888
 mubbo:

@@ -4,7 +4,6 @@ import com.alishangtian.macos.broker.controller.BrokerStarter;
 import com.alishangtian.macos.common.RemotingCommandResultEnums;
 import com.alishangtian.macos.common.util.JSONUtils;
 import com.alishangtian.macos.remoting.XtimerCommand;
-import com.alishangtian.macos.remoting.common.XtimerHelper;
 import com.alishangtian.macos.remoting.processor.NettyRequestProcessor;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.log4j.Log4j2;
@@ -26,7 +25,7 @@ public class GetServicePublisherProcessor implements NettyRequestProcessor {
 
     @Override
     public XtimerCommand processRequest(ChannelHandlerContext ctx, XtimerCommand request) throws Exception {
-        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(this.brokerStarter.getPublisherChannels().get(String.valueOf(request.getLoad()))).getBytes()).build();
+        return XtimerCommand.builder().result(RemotingCommandResultEnums.SUCCESS.getResult()).load(JSONUtils.toJSONString(this.brokerStarter.getPublisherChannels()).getBytes()).build();
     }
 
     @Override

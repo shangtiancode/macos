@@ -12,5 +12,5 @@ public class BrokerConfig {
     private String mode;
     private String host;
     private String clusterNodes;
-    private boolean servicePubNotify = false;
+    private boolean servicePubNotify = true;
 }

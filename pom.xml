@@ -11,10 +11,10 @@
     <modules>
         <module>macos-common</module>
         <module>macos-broker</module>
-        <module>macos-remoting</module>
-        <module>macos-spring-boot-starter</module>
-        <module>macos-client</module>
-        <module>macos-mubbo</module>
+        <module>netty-remoting</module>
+        <module>netty-client</module>
+        <module>mubbo-spring-boot-starter</module>
+        <module>mubbo-core</module>
         <module>mubbo-consumer</module>
         <module>mubbo-provider</module>
     </modules>
@@ -80,11 +80,6 @@
                 <version>4.1.56.Final</version>
             </dependency>
             <dependency>
-                <groupId>com.github.rholder</groupId>
-                <artifactId>guava-retrying</artifactId>
-                <version>2.0.0</version>
-            </dependency>
-            <dependency>
                 <groupId>com.alishangtian.macos</groupId>
                 <artifactId>macos-broker</artifactId>
                 <version>${macos.version}</version>
@@ -96,36 +91,31 @@
             </dependency>
             <dependency>
                 <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-core</artifactId>
+                <artifactId>netty-client</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-client</artifactId>
-                <version>${macos.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-remoting</artifactId>
+                <artifactId>netty-remoting</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alishangtian.mubbo</groupId>
-                <artifactId>macos-mubbo</artifactId>
+                <artifactId>mubbo-core</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.alishangtian.macos</groupId>
-                <artifactId>macos-spring-boot-starter</artifactId>
+                <groupId>com.alishangtian.mubbo</groupId>
+                <artifactId>mubbo-spring-boot-starter</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.alishangtian.macos</groupId>
+                <groupId>com.alishangtian.mubbo</groupId>
                 <artifactId>mubbo-provider</artifactId>
                 <version>${macos.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.alishangtian.macos</groupId>
+                <groupId>com.alishangtian.mubbo</groupId>
                 <artifactId>mubbo-consumer</artifactId>
                 <version>${macos.version}</version>
             </dependency>

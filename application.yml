@@ -1,6 +1,6 @@
 spring:
   application:
-    name: macos
+    name: macos-broker
 macos:
   broker:
     mode: CLUSTER

@@ -32,15 +32,11 @@
         </dependency>
         <dependency>
             <groupId>com.alishangtian.macos</groupId>
-            <artifactId>macos-remoting</artifactId>
+            <artifactId>netty-remoting</artifactId>
         </dependency>
         <dependency>
             <groupId>com.alishangtian.macos</groupId>
             <artifactId>macos-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.rholder</groupId>
-            <artifactId>guava-retrying</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -8,6 +8,10 @@ package com.alishangtian.macos.common.protocol;
  */
 public class RequestCode {
     /**
+     * channel保活请求
+     */
+    public static final int CHANNEL_KEEP_ALIVE_PING_REQUEST = 1;
+    /**
      * 节点间心跳请求
      */
     public static final int BROKER_PING_REQUEST = 101;
@@ -55,9 +59,18 @@ public class RequestCode {
      * 服务客户端向服务server请求服务
      */
     public static final int CLIENT_INVOKE_SERVICE_TO_SERVER = 110;
+
+    /**
+     * 服务provider下线信息扩散
+     */
+    public static final int BROKER_SPREAD_PROVIDER_OFFLINE_REQUEST = 111;
     /**
      * 注册中心通知consumer拉取服务发布信息
      */
     public static final int REGISTER_NOTIFY_CLIENT_FOR_SERVICE_PUB = 201;
+    /**
+     * 注册中心通知consumer删除特定provider下的服务
+     */
+    public static final int REGISTER_NOTIFY_CLIENT_FOR_SERVICE_UNPUB = 202;
 
 }
