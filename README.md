@@ -12,9 +12,10 @@
 
 ## 4.启动服务（demo）
 
-    ./run_example.sh
+    ./run_provider.sh
+    ./run_consumer.sh
 
 ## 5.测试
 
-    测试链接：http://127.0.0.1:8000/insert?id=10
-    结果是100
+    测试链接：http://127.0.0.1:8888/insert?name=zhangsan&age=11$address=beijing
+    结果是0
